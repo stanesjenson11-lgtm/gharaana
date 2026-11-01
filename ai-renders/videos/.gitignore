@@ -1,0 +1,4 @@
+# reproducible intermediates: record.mjs makes tour-3d.mp4, restyle.py makes segments/
+.prof/
+tour-3d.mp4
+segments/
