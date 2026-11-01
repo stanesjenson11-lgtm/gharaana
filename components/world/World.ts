@@ -312,6 +312,8 @@ export function createWorld(canvas: HTMLCanvasElement, opts: { reduced: boolean;
       m.depthWrite = upOp > 0.98 && base >= 1;
     }
     floor.ceilingBits.visible = upOp > 0.5;
+    floor.others.visible = upOp <= 0.5; // the rest of the floor is only seen from above
+    tower.setWindow(pw(LIGHT.windowCover, tick), pw(LIGHT.doorOpen, tick));
     // the flat is only drawn while the camera is close enough to see into it
     floor.group.visible = tick > 36 && tick < 89;
     floor.update(time, pw(LIGHT.beams, tick) * THREE.MathUtils.clamp(elev / 10, 0, 1));
@@ -415,8 +417,8 @@ export function createWorld(canvas: HTMLCanvasElement, opts: { reduced: boolean;
     // downloaded models are compiled before they join the scene, so they appear without a hitch
     mark("furnish@");
     const compile = (o: THREE.Object3D) => compileFor(o).catch(() => undefined);
-    if (q.furniture) floor.furnish(compile).catch(() => undefined);
-    if (q.plazaProps) city.furnish(compile).catch(() => undefined);
+    if (q.furniture) floor.furnish(compile).then(() => mark("furnished@"), () => undefined);
+    if (q.plazaProps) city.furnish(compile).then(() => mark("plaza@"), () => undefined);
   }
   // larger screens also start after a quiet moment; phones wait for the first scroll to save data
   const furnishTimer = q.tier === "low" ? 0 : window.setTimeout(furnish, 10000);

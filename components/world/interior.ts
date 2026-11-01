@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { rng } from "@/lib/geo";
-import { CEIL_H, T, UNIT_Y, glassZ, sp } from "./tower";
+import { CEIL_H, DOOR_X1, T, UNIT_Y, glassZ, sp } from "./tower";
 import { leafTexture, marbleTexture, printTexture, rugTexture, tileTexture, woodTexture } from "./textures";
 import { applyPbr, loadModel, preparePbr, worldUv } from "./assets";
 
@@ -21,6 +21,8 @@ export function buildFloor() {
   g.position.y = UNIT_Y;
   const ceilingBits = new THREE.Group();
   g.add(ceilingBits);
+  const unit = new THREE.Group(); // this flat alone: copied into the neighbouring flats for the plan view
+  g.add(unit);
 
   /* ---- materials: procedural first, real Poly Haven surfaces swap in as they load ---- */
   const wood = woodTexture();
@@ -68,7 +70,7 @@ export function buildFloor() {
     applyPbr(M.rug, "velour_velvet", 3, { map: false, normal: true, rough: false }, 0.7);
   };
 
-  const put = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number, ry = 0, parent: THREE.Object3D = g) => {
+  const put = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number, ry = 0, parent: THREE.Object3D = unit) => {
     const m = new THREE.Mesh(geo, mat);
     m.position.set(x, y, z);
     m.rotation.y = ry;
@@ -77,7 +79,7 @@ export function buildFloor() {
     parent.add(m);
     return m;
   };
-  const group = (x = 0, z = 0, ry = 0) => { const o = new THREE.Group(); o.position.set(x, 0, z); o.rotation.y = ry; g.add(o); return o; };
+  const group = (x = 0, z = 0, ry = 0) => { const o = new THREE.Group(); o.position.set(x, 0, z); o.rotation.y = ry; unit.add(o); return o; };
   const rb = (w: number, h: number, d: number, r = 0.04) => new RoundedBoxGeometry(w, h, d, 3, Math.min(r, w / 2, h / 2, d / 2));
   const bx = (w: number, h: number, d: number) => new THREE.BoxGeometry(w, h, d);
   const wall = (x0: number, z0: number, x1: number, z1: number, t = 0.14) => {
@@ -95,10 +97,10 @@ export function buildFloor() {
   const unitShape = new THREE.Shape([new THREE.Vector2(-W, -BACK), new THREE.Vector2(W, -BACK), ...front]);
   const floor = new THREE.Mesh(new THREE.ShapeGeometry(unitShape), M.floor);
   floor.rotation.x = -Math.PI / 2; floor.position.y = 0.006; floor.receiveShadow = true;
-  g.add(floor);
+  unit.add(floor);
   const bath = new THREE.Mesh(new THREE.PlaneGeometry(3.2, SPLIT - BACK), M.tiles);
   bath.rotation.x = -Math.PI / 2; bath.position.set(0, 0.01, (BACK + SPLIT) / 2); bath.receiveShadow = true;
-  g.add(bath);
+  unit.add(bath);
 
   /* ---- walls ---- */
   wall(-W, BACK, W, BACK);
@@ -109,18 +111,12 @@ export function buildFloor() {
   // skirting along the living-room walls
   put(bx(2 * W, 0.08, 0.02), M.lacquer, 0, 0.04, SPLIT + 0.08);
 
-  /* ---- the rest of the floor: core and four neighbouring flats ---- */
-  put(bx(9, CEIL_H, 5.6), new THREE.MeshStandardMaterial({ color: 0xbdbab3, roughness: 0.9 }), 0, CEIL_H / 2, -0.2);
-  wall(-W, BACK, -W, -glassZ(W)); wall(W, BACK, W, -glassZ(W));
-  wall(-T.a, 0, -W, 0); wall(W, 0, T.a, 0);
-  wall(-W, -3, W, -3);
-  for (const [x, z, ry] of [[-12, 6.5, 0], [12, 6.5, 0], [-12, -6.5, Math.PI], [12, -6.5, Math.PI], [0, -8.5, Math.PI]] as const) {
-    put(rb(1.8, 0.5, 2.1, 0.08), M.linen, x - 1.8, 0.25, z, ry);
-    put(rb(2.4, 0.75, 0.95, 0.12), M.fabric, x + 1.6, 0.38, z + (ry ? 1.5 : -1.5), ry);
-  }
+  /* ---- the rest of the floor: the lift core; the neighbouring flats are copies of this one (see copyUnit) ---- */
+  put(bx(9, CEIL_H, 5.6), new THREE.MeshStandardMaterial({ color: 0xbdbab3, roughness: 0.9 }), 0, CEIL_H / 2, -0.2, 0, g);
 
   /* ---- window wall: mullions, transom and sill (they cast the striped sun patches) ---- */
   for (let x = -W + 1.4; x < W - 0.5; x += 1.4) {
+    if (x > 0.05 && x < DOOR_X1 - 0.05) continue; // the sliding door's opening
     put(bx(0.05, CEIL_H, 0.09), M.frame, x, CEIL_H / 2, glassZ(x) - 0.03, Math.atan(-(glassZ(x + 0.01) - glassZ(x - 0.01)) / 0.02));
   }
   put(bx(2 * W, 0.07, 0.1), M.frame, 0, CEIL_H - 0.04, glassZ(0) - 0.08);
@@ -225,7 +221,7 @@ export function buildFloor() {
     for (let k = 0; k < pos.count; k++) pos.setZ(k, Math.sin(pos.getX(k) * 18) * 0.05);
     c.geometry.computeVertexNormals();
     c.position.set(sx * (W - 0.55), (CEIL_H - 0.08) / 2, glassZ(W - 0.55) - 0.25);
-    g.add(c);
+    unit.add(c);
   }
 
   /* ---- plaster ceiling and recessed lights (hidden when the floors above lift away) ---- */
@@ -306,7 +302,7 @@ export function buildFloor() {
     };
     // top surface in room coordinates (the floor group sits at UNIT_Y in the world)
     const top = (o: THREE.Object3D) => { o.updateWorldMatrix(true, true); return new THREE.Box3().setFromObject(o).max.y - g.position.y; };
-    const at = (o: THREE.Object3D, x: number, z: number, ry: number, parent: THREE.Object3D = g) => {
+    const at = (o: THREE.Object3D, x: number, z: number, ry: number, parent: THREE.Object3D = unit) => {
       o.rotation.y = ry;
       const wrap = new THREE.Group();
       wrap.add(o);
@@ -318,13 +314,35 @@ export function buildFloor() {
     const face = (x: number, z: number, tx: number, tz: number) => Math.atan2(tx - x, tz - z);
     const load = (id: string) => loadModel(id).catch(() => null);
 
-    const [table, lounge, arm, plantA, plantB, vase, lampM, cabinet, frame, pillows, bowl, wine] = await Promise.all([
+    const models = await Promise.all([
       load("coffee_table_round_01"), load("mid_century_lounge_chair"), load("modern_arm_chair_01"),
       load("potted_plant_02"), load("potted_plant_04"), load("ceramic_vase_01"),
       load("modern_ceiling_lamp_01"), load("modern_wooden_cabinet"), load("standing_picture_frame_01"),
       load("throw_pillows_01"), load("wooden_bowl_01"), load("wine_bottles_01"),
+      load("side_table_01"), load("decorative_book_set_01"), load("brass_vase_02"), load("potted_plant_01"),
+      load("brass_candleholders"), load("vintage_electric_kettle"), load("planter_box_01"), load("outdoor_table_chair_set_01"),
     ]);
-    await Promise.all([table, lounge, arm, plantA, plantB, vase, lampM, cabinet, frame, pillows, bowl, wine].filter((m): m is THREE.Group => !!m).map(compile));
+    const [table, lounge, arm, plantA, plantB, vase, lampM, cabinet, frame, pillows, bowl, wine,
+      sideTable, books, brassVase, plantC, candles, kettle, planter, patio] = models;
+    await Promise.all(models.filter((m): m is THREE.Group => !!m).map(compile));
+    // more of a lived-in home: a side table by the sofa, books, brass, a kettle, one more plant
+    if (sideTable) {
+      const st = at(sideTable, -1.85, 8.25, 0);
+      if (brassVase) at(brassVase, -1.85, 8.25, 0).position.y = top(st);
+    }
+    if (books) at(books, -4.05, 9.9, 0.5).position.y = 0.425;
+    if (candles) at(candles, 1.95, 10.5, 0).position.y = 0.775;
+    if (kettle) at(kettle, W - 0.42, 9.35, -Math.PI / 2).position.y = 0.94;
+    if (plantC) { fit(plantC, 1.6); at(plantC, 3.4, 12.1, 0.8); }
+    // corner terraces: planters and a table for two
+    for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+      if (patio) at(patio.clone(), sx * 10.4, sz * 9.2, sx * sz * 0.5, terraces);
+      if (planter) {
+        at(planter.clone(), sx * 8.3, sz * 11.6, 0, terraces);
+        at(planter.clone(), sx * 12.9, sz * 7.9, Math.PI / 2, terraces);
+      }
+    }
+    copyUnit(); // refresh the neighbours so they get the furniture too
     if (pillows) at(pillows, -3.8, 8.42, 0).position.y = 0.6;
     if (bowl) at(bowl, 1.55, 10.45, 0.3).position.y = 0.775;
     if (wine) at(wine, W - 0.42, 10.75, -Math.PI / 2).position.y = 0.94;
@@ -360,10 +378,37 @@ export function buildFloor() {
   }
 
   // ~200 static pieces become one mesh per material: far fewer draw calls (and shadow-pass calls)
-  mergeStatic(g, new Set<THREE.Object3D>([ceilingBits, fbCoffee, fbChair, fbPlants, fbPendant]));
+  mergeStatic(unit, new Set<THREE.Object3D>([fbCoffee, fbChair, fbPlants, fbPendant]));
+
+  /* ---- the plan view shows the whole floor: three more flats like this one, and a terrace in each corner ---- */
+  const others = new THREE.Group(); // only drawn while the floors above are lifted away
+  const copies = new THREE.Group(), terraces = new THREE.Group();
+  others.add(copies, terraces);
+  g.add(others);
+  // ponytail: neighbours are shared-geometry clones (back flat turned 180 degrees, side flats turned to face out and
+  // scaled 0.9 to fit the narrower ends of the plan); real layouts per flat if the plan ever needs to be accurate
+  function copyUnit() {
+    copies.clear();
+    for (const [ry, x, s] of [[Math.PI, 0, 1], [Math.PI / 2, 4.6, 0.9], [-Math.PI / 2, -4.6, 0.9]] as const) {
+      const c = unit.clone();
+      c.rotation.y = ry; c.position.x = x; c.scale.setScalar(s);
+      copies.add(c);
+    }
+  }
+  copyUnit();
+  // decks between the side flats' walls (|z| = 6.3) and the curved glass
+  const DX = W + 0.25, DZ = 6.45;
+  const edge: THREE.Vector2[] = [];
+  for (let x = DX; glassZ(x) - 0.08 > DZ; x += 0.25) edge.push(new THREE.Vector2(x, glassZ(x) - 0.08));
+  for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+    const pts = [new THREE.Vector2(DX, DZ), ...edge, new THREE.Vector2(edge[edge.length - 1].x, DZ)].map((p) => new THREE.Vector2(sx * p.x, -sz * p.y));
+    const deck = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(pts)), M.oak);
+    deck.rotation.x = -Math.PI / 2; deck.position.y = 0.006; deck.receiveShadow = true;
+    terraces.add(deck);
+  }
 
   // ponytail: two point lights only; every lit pixel in the city pays for each light, so kitchen and bedrooms rely on daylight
-  return { group: g, ceilingBits, lights: [lamp, pendant], shades: [M.shade, M.spot], update, furnish };
+  return { group: g, ceilingBits, others, lights: [lamp, pendant], shades: [M.shade, M.spot], update, furnish };
 }
 
 /** Merges every static, opaque mesh under root into one mesh per material (skipping the groups in keep). */

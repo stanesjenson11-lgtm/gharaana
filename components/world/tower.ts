@@ -94,6 +94,9 @@ function band(i: number, skip?: (x: number, z: number) => boolean) {
 }
 
 const inUnit = (x: number, z: number) => z > 0 && Math.abs(x) < T.unitHalf;
+/** The sliding door the camera flies through: the facade segment just right of the front centre line. */
+export const DOOR_X1 = BASE[T.seg / 4 - 1].x;
+const inDoor = (x: number, z: number) => z > 0 && x > 0 && x < DOOR_X1;
 
 export function buildTower() {
   const cols = Math.round(PERIM / 1.5);
@@ -156,12 +159,36 @@ export function buildTower() {
   const leds = [1, 2].map((i) => ribbon(outline(i, 0.02), floorY(i) + 0.1, floorY(i) + 0.22));
   lower.add(new THREE.Mesh(mergeGeometries(leds), brandYellow));
 
-  // The apartment's own window: clear glass so we can fly through it.
+  // The apartment's own window: clear glass so we can fly through it, with a sliding door where the camera enters.
   const unitGlassMat = new THREE.MeshPhysicalMaterial({ color: 0xe6f0f7, metalness: 0, roughness: 0.02, transparent: true, opacity: 0.1, depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 1.6 });
-  const unitGlass = new THREE.Mesh(band(T.unit, (x, z) => !inUnit(x, z)), unitGlassMat);
+  const unitGlass = new THREE.Mesh(band(T.unit, (x, z) => !inUnit(x, z) || inDoor(x, z)), unitGlassMat);
   lower.add(unitGlass);
+  // From a distance it must read as the same closed facade glass as every other floor; it clears as we arrive.
+  const coverMat = lo.glass.clone();
+  coverMat.transparent = true;
+  coverMat.depthWrite = false;
+  const unitCover = new THREE.Mesh(band(T.unit, (x, z) => !inUnit(x, z)), coverMat);
+  lower.add(unitCover);
 
-  return { lower, upper, glasses: [lo.glass, up.glass], upperMats: collectMats(upper), unitGlass };
+  const doorW = DOOR_X1, doorH = floorY(T.unit + 1) - (floorY(T.unit) + T.slab);
+  const door = new THREE.Group();
+  door.add(new THREE.Mesh(new THREE.PlaneGeometry(doorW, doorH), unitGlassMat));
+  for (const [w, h, x, y] of [[doorW, 0.05, 0, doorH / 2 - 0.025], [doorW, 0.05, 0, 0.025 - doorH / 2], [0.05, doorH, 0.025 - doorW / 2, 0], [0.05, doorH, doorW / 2 - 0.025, 0]]) {
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.05), lo.metal);
+    bar.position.set(x, y, 0);
+    door.add(bar);
+  }
+  const doorX = doorW / 2;
+  door.position.set(doorX, floorY(T.unit) + T.slab + doorH / 2, glassZ(doorX) - 0.14); // inside the mullions, so it slides past them
+  lower.add(door);
+  /** cover: 1 = facade look, 0 = clear. open: 0 = shut, 1 = slid fully behind the fixed pane to its left. */
+  const setWindow = (cover: number, open: number) => {
+    coverMat.opacity = cover;
+    unitCover.visible = cover > 0.01;
+    door.position.x = doorX - open * doorW;
+  };
+
+  return { lower, upper, glasses: [lo.glass, up.glass, coverMat], upperMats: collectMats(upper), unitGlass, setWindow };
 }
 
 function collectMats(g: THREE.Object3D) {

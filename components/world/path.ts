@@ -14,12 +14,12 @@ export const KEYS: Key[] = [
   { t: 31, p: [96, 80, 206], q: [0, 76, 0], fov: 38, hold: true },
   { t: 38, p: [36, 96, 72], q: [0, 90, 12], fov: 38 }, // closer: the balconies
   { t: 44, p: [6, 90.6, 34], q: [0, 89.4, 13], fov: 40 }, // one window
-  { t: 48, p: [0.8, 89.5, 17.2], q: [0, 89.2, 10], fov: 46 },
-  { t: 51, p: [0.2, 89.4, 12.3], q: [-0.6, 89.0, 7.6], fov: 54 }, // through the glass
+  { t: 48, p: [1.1, 89.5, 17.2], q: [0.4, 89.2, 10], fov: 46 }, // through the middle of the sliding door
+  { t: 51, p: [0.9, 89.4, 12.3], q: [-0.6, 89.0, 7.6], fov: 54 }, // through the glass
   { t: 58, p: [0.4, 89.6, 12.35], q: [-4.2, 88.45, 9.2], fov: 60, hold: true }, // the living room
   { t: 63, p: [0.2, 89.8, 11.9], q: [-2.0, 88.4, 7.6], fov: 58 },
   { t: 69, p: [0.2, 99, 8.6], q: [0, 87.9, 8.5], fov: 52 }, // up through the ceiling
-  { t: 76, p: [0, 106, 8.2], q: [0, 87.9, 8.1], fov: 46, hold: true }, // the same flat, as a plan
+  { t: 76, p: [0, 124, 1.5], q: [0, 87.9, 1.4], fov: 46, hold: true }, // the whole floor as a plan: this flat and its neighbours
   { t: 82, p: [0, 190, 30], q: [0, 0, 29.5], fov: 44 },
   { t: 90, p: [0, 560, 62], q: [0, 0, 61], fov: 42, hold: true }, // the neighbourhood, tower in the middle
   { t: 96, p: [-150, 330, 400], q: [0, 70, 30], fov: 40 },
@@ -76,4 +76,7 @@ export const LIGHT = {
   upper: [[0, 1], [63.5, 1], [67, 0], [85, 0], [89.5, 1]] as [number, number][],
   ao: [[0, 4], [46, 4], [50, 0.7], [80, 0.7], [86, 4]] as [number, number][],
   pins: [[0, 0], [86, 0], [88.5, 1], [94.5, 1], [96.5, 0]] as [number, number][],
+  // the flat's window: facade glass from afar, clearing as we arrive (1 = facade look), then the door slides open
+  windowCover: [[0, 1], [40, 1], [46, 0], [86, 0], [90, 1]] as [number, number][],
+  doorOpen: [[0, 0], [45.5, 0], [49.5, 1], [86, 1], [90, 0]] as [number, number][],
 };

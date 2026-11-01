@@ -42,3 +42,8 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# headless Chrome profile used by ai-renders scripts (asset cache)
+.chrome-profile/
+ai-renders/shots/
+ai-renders/.asset-cache/
