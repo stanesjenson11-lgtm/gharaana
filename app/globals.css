@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+/* Gharaana brand kit (July 2024): white, #FFDA1A yellow, #1560BD blue. Navy measured from the kit's wordmark. */
+:root {
+  --blue: #1560bd;
+  --sun: #ffda1a;
+  --ink: #001238;
+  --paper: #ffffff;
+
+  /* Everything else is a mix of the four above. */
+  --sky-1: color-mix(in oklab, var(--blue) 7%, white);
+  --sky-2: color-mix(in oklab, var(--blue) 18%, white);
+  --sky-3: color-mix(in oklab, var(--blue) 38%, white);
+  --blue-deep: color-mix(in oklab, var(--blue) 62%, var(--ink));
+  --night: color-mix(in oklab, var(--blue) 14%, var(--ink));
+  --glow: color-mix(in oklab, var(--sun) 55%, white);
+  --park: color-mix(in oklch, var(--blue) 46%, var(--sun));
+  --park-deep: color-mix(in oklch, var(--park) 70%, var(--ink));
+
+  /* Adobe Fonts families first (live once the kit is added), free stand-in second. */
+  --font-display: "neue-haas-grotesk-display", var(--font-fallback), "Helvetica Neue", Arial, sans-serif;
+  --font-text: "neue-haas-grotesk-text", var(--font-fallback), "Helvetica Neue", Arial, sans-serif;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --gutter: clamp(1.25rem, 4vw, 3.5rem);
+}
+
+@theme inline {
+  --color-blue: var(--blue);
+  --color-sun: var(--sun);
+  --color-ink: var(--ink);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-text);
+}
+
+html {
+  background: var(--sky-1);
+  color-scheme: light;
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue) var(--sky-1);
+}
+
+body {
+  margin: 0;
+  background: var(--sky-1);
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Lenis owns scroll while it runs. */
+html.lenis, html.lenis body { height: auto; }
+.lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+
+::selection { background: var(--sun); color: var(--ink); }
+input, button { caret-color: var(--blue); accent-color: var(--blue); }
+
+/* Double ring reads on white, blue and navy alike. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--sun);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
