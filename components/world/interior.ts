@@ -3,7 +3,7 @@ import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeom
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { rng } from "@/lib/geo";
 import { CEIL_H, DOOR_X1, T, UNIT_Y, glassZ, sp } from "./tower";
-import { leafTexture, marbleTexture, printTexture, rugTexture, tileTexture, woodTexture } from "./textures";
+import { artTexture, leafTexture, marbleTexture, printTexture, rugTexture, tileTexture, woodTexture } from "./textures";
 import { applyPbr, loadModel, preparePbr, worldUv } from "./assets";
 
 /*
@@ -151,6 +151,33 @@ export function buildFloor() {
 
   put(bx(1.7, 1.05, 0.04), M.print, -3.8, 1.75, SPLIT + 0.1);
   put(bx(1.78, 1.13, 0.03), M.frame, -3.8, 1.75, SPLIT + 0.085);
+  // Back wall was bare between the sofa and dining; put decor in the camera's actual view.
+  const artA = new THREE.MeshStandardMaterial({ map: artTexture(0), roughness: 0.85 });
+  const artB = new THREE.MeshStandardMaterial({ map: artTexture(1), roughness: 0.85 });
+  // Framed art on the two wall sections visible from the sofa POV (left of door at x≈-1.5; right of door at x≈1.5).
+  for (const [wx, art] of [[-1.5, artA], [1.5, artB]] as const) {
+    put(bx(0.9, 1.3, 0.04), art, wx, 1.65, SPLIT + 0.1);
+    put(bx(0.98, 1.38, 0.03), M.frame, wx, 1.65, SPLIT + 0.085);
+  }
+  // Low console with vases on the wall section at [0.45, 2.55], just right of the bath door.
+  put(bx(1.8, 0.42, 0.45), M.oak, 1.5, 0.21, SPLIT + 0.3);
+  put(bx(1.9, 0.03, 0.5), M.marble, 1.5, 0.44, SPLIT + 0.3);
+  put(new THREE.CylinderGeometry(0.11, 0.14, 0.34, 24), M.ceramic, 1.1, 0.6, SPLIT + 0.3);
+  put(new THREE.CylinderGeometry(0.08, 0.1, 0.22, 24), M.brass, 1.85, 0.54, SPLIT + 0.3);
+  // Tall mirror further right (back wall section [3.45, 7]) for the plan view and the camera's rising arc.
+  put(bx(0.95, 1.6, 0.04), M.lacquer, 5.1, 1.65, SPLIT + 0.08);
+  put(bx(0.99, 1.64, 0.03), M.frame, 5.1, 1.65, SPLIT + 0.075);
+  // Floor plant in the walkway between sofa and dining (world x≈-0.5, visible between the two)
+  put(new THREE.CylinderGeometry(0.26, 0.2, 0.52, 24), M.pot, -0.3, 0.26, 9.4);
+  const planter = rng(7);
+  for (let k = 0; k < 24; k++) {
+    const leaf = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.74), M.leaf);
+    const a = planter() * Math.PI * 2, h = 0.65 + planter() * 1.35;
+    leaf.position.set(-0.3 + Math.cos(a) * 0.22, h, 9.4 + Math.sin(a) * 0.22);
+    leaf.rotation.set(-0.5 - planter() * 0.6, a, (planter() - 0.5) * 0.6);
+    leaf.castShadow = true;
+    unit.add(leaf);
+  }
 
   /* ---- plants by the glass (stand-ins until the real ones load) ---- */
   const fbPlants = group();

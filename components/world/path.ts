@@ -61,15 +61,15 @@ export function pw(table: [number, number][], t: number) {
 
 export const LIGHT = {
   // morning sun from behind the camera, high over the room, then low and golden at sunset (the tour ends there)
-  sunElev: [[0, 15], [22, 18], [44, 22], [66, 24], [90, 34], [97, 18], [103, 8], [110, 6]] as [number, number][],
+  sunElev: [[0, 15], [22, 18], [44, 22], [66, 24], [90, 34], [97, 14], [103, 5], [110, 3]] as [number, number][],
   sunAzim: [[0, 48], [44, 40], [66, 40], [90, 30], [100, 66], [110, 72]] as [number, number][],
-  golden: [[0, 0], [96, 0], [104, 1]] as [number, number][],
+  golden: [[0, 0], [93, 0], [100, 1]] as [number, number][],
   // indoors gets far less sky light than outdoors, so sun patches and lamps read
   ambient: [[0, 1], [47, 1], [51, 0.38], [64, 0.38], [69, 0.8], [80, 0.8], [86, 1]] as [number, number][],
   mist: [[0, 1], [12, 1], [22, 0]] as [number, number][],
   lowClouds: [[0, 1], [14, 1], [21, 0]] as [number, number][],
   skyClouds: [[0, 1], [76, 1], [80, 0], [94, 0], [99, 1]] as [number, number][],
-  birds: [[0, 1], [16, 1], [21, 0]] as [number, number][],
+  birds: [[0, 0]] as [number, number][], // kept off; birds will be overlaid later
   beams: [[0, 0], [47, 0], [51, 1], [63, 1], [66, 0]] as [number, number][],
   exposure: [[0, 1.0], [46, 1.0], [50.5, 1.45], [64, 1.45], [70, 1.15], [80, 1.15], [86, 1.0], [98, 1.0], [104, 1.25], [110, 1.3]] as [number, number][],
   lift: [[0, 0], [63, 0], [68, 1], [84, 1], [90, 0]] as [number, number][],

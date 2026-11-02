@@ -70,7 +70,8 @@ export async function openTour({ url, width, height, port }) {
   await send("Page.navigate", { url });
   for (let i = 0; i < 120; i++) { await sleep(500); if (await evalJs(`!!window.__gh && document.querySelector('.stage')?.dataset.world === 'ready'`)) break; }
   // furniture starts on a 10 s timer; wait until World marks it (and the plaza props) placed, or give up after 6 min
-  for (let i = 0; i < 720 && !(await evalJs(`!!(__gh.marks["furnished@"] && (__gh.q.plazaProps ? __gh.marks["plaza@"] : 1))`)); i++) await sleep(500);
+  // the shoot/record scripts need the 3D world, which only mounts when the URL has ?mode=3d
+  for (let i = 0; i < 720 && !(await evalJs(`!!(window.__gh && __gh.marks && __gh.marks["furnished@"] && (__gh.q?.plazaProps ? __gh.marks["plaza@"] : 1))`)); i++) await sleep(500);
   console.log("tier", await evalJs("__gh.q.tier"), "furnished", await evalJs(`__gh.marks["furnished@"] ?? "NO"`));
   await sleep(3000); // late textures
   // canvas only: hide the HTML layer (and any dev overlay) so the frames show just the 3D scene

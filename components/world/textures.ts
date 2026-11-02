@@ -146,6 +146,32 @@ export function printTexture() {
   return tex(c);
 }
 
+/** Two quiet abstract prints (soft colour fields / arcs), so the living room isn't three copies of the brand print. */
+export function artTexture(variant: 0 | 1) {
+  const [c, g] = canvas(340, 512);
+  g.fillStyle = "#f3efe8";
+  g.fillRect(0, 0, 340, 512);
+  if (variant === 0) {
+    // stacked earth-tone fields
+    for (const [y, h, col] of [[60, 150, "#c9a27e"], [230, 110, "#8c9a86"], [360, 90, "#d9c6a8"]] as const) {
+      g.fillStyle = col;
+      g.beginPath();
+      g.roundRect(50, y, 240, h, 18);
+      g.fill();
+    }
+  } else {
+    // two overlapping arcs and a sun
+    g.lineWidth = 26;
+    g.strokeStyle = "#b07a5a";
+    g.beginPath(); g.arc(170, 400, 120, Math.PI, 0); g.stroke();
+    g.strokeStyle = "#6f8297";
+    g.beginPath(); g.arc(170, 400, 70, Math.PI, 0); g.stroke();
+    g.fillStyle = "#e0b04e";
+    g.beginPath(); g.arc(230, 150, 42, 0, Math.PI * 2); g.fill();
+  }
+  return tex(c);
+}
+
 /** One leaf with alpha, for the plants. */
 export function leafTexture() {
   const [c, g] = canvas(128, 256);

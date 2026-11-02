@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Lenis from "lenis";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -12,23 +12,31 @@ import "./tour.css";
 
 type Tone = "ink" | "paper";
 
+const noop = () => () => {};
+
 const PINS = [
   { id: "tower", label: "This tower" },
   { id: "park", label: "Park" },
   { id: "river", label: "Riverside" },
 ] as const;
 
-/** The scroll tour: a sticky stage with one 3D world, one camera, and the HTML layer on top. */
+/** The scroll tour: default = photoreal video scrubbed by scroll; `?mode=3d` = live three.js (used by record.mjs). */
 export default function Tour() {
   const root = useRef<HTMLElement>(null);
+  const video = useRef<HTMLVideoElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const api = useRef<ReturnType<typeof buildTour> | null>(null);
   const smooth = useRef<Lenis | null>(null);
   const [tone, setTone] = useState<Tone>("ink");
   const [active, setActive] = useState(0);
   const [ready, setReady] = useState<"loading" | "ready" | "failed">("loading");
+  // browser-only values, read without a setState-in-effect (server render: video mode, no src yet)
+  const mode = useSyncExternalStore(noop, () => (new URLSearchParams(location.search).get("mode") === "3d" ? "3d" : "video"), () => "video");
+  // both files are all-intra (every frame a keyframe) so scroll seeks are instant; small screens get the lighter one
+  const src = useSyncExternalStore(noop, () => (innerWidth >= 1280 ? "/tour-1080.mp4?v=4" : "/tour-720.mp4?v=4"), () => null);
 
   useEffect(() => {
+    if (mode === "video" && !src) return; // wait until the file for this screen size is chosen
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     gsap.registerPlugin(ScrollTrigger);
 
@@ -42,42 +50,62 @@ export default function Tour() {
     }
     smooth.current = lenis;
 
+    let onTick: (t: number) => void = () => undefined;
+    const cleanups: (() => void)[] = [];
     let world: World | null = null;
     let lastTick = 0;
     let disposed = false;
-    const ctx = gsap.context(() => {
-      api.current = buildTour(root.current!, {
-        reduced,
-        onTone: setTone,
-        onStop: setActive,
-        onTick: (t) => { lastTick = t; world?.setTick(t); },
-      });
-    }, root);
 
-    // The 3D world loads after first paint; the hero and search work before it arrives.
-    import("@/components/world/World")
-      .then(({ createWorld, PIN_POINTS }) => {
+    if (mode === "video") {
+      const v = video.current!;
+      v.muted = true; v.playsInline = true;
+      const prime = () => { v.play().then(() => v.pause()).catch(() => undefined); };
+      const onLoaded = () => { prime(); setReady("ready"); };
+      const onError = () => setReady("failed");
+      v.addEventListener("loadedmetadata", onLoaded, { once: true });
+      v.addEventListener("error", onError, { once: true });
+      if (v.readyState >= 1) onLoaded();
+      const FRAME = 1 / 24;
+      let want = 0, last = -1, seeking = false;
+      const seek = () => {
+        if (seeking) return;
+        const d = v.duration;
+        if (!d || Number.isNaN(d)) return;
+        const t = Math.min(d - 0.001, Math.max(0, want));
+        if (Math.abs(t - last) < FRAME) return;
+        seeking = true; last = t; v.currentTime = t;
+      };
+      const onSeeked = () => { seeking = false; if (Math.abs(want - last) >= FRAME) seek(); };
+      v.addEventListener("seeked", onSeeked);
+      onTick = (t) => { want = (t / TOTAL) * (v.duration || 0); seek(); };
+      cleanups.push(() => { v.removeEventListener("loadedmetadata", onLoaded); v.removeEventListener("error", onError); v.removeEventListener("seeked", onSeeked); });
+    } else {
+      onTick = (t) => { lastTick = t; world?.setTick(t); };
+      import("@/components/world/World").then(({ createWorld, PIN_POINTS }) => {
         if (disposed || !canvas.current) return;
         const pins = PINS.map((p) => ({ el: root.current!.querySelector<HTMLElement>(`[data-wpin="${p.id}"]`)!, at: PIN_POINTS[p.id] }));
         world = createWorld(canvas.current, { reduced, pins, onReady: () => setReady("ready") });
         world.setTick(lastTick);
-      })
-      .catch(() => setReady("failed"));
+      }).catch(() => setReady("failed"));
+      const onResize = () => world?.resize();
+      addEventListener("resize", onResize);
+      cleanups.push(() => { removeEventListener("resize", onResize); world?.dispose(); });
+    }
 
-    const onResize = () => world?.resize();
-    addEventListener("resize", onResize);
+    const ctx = gsap.context(() => {
+      api.current = buildTour(root.current!, { reduced, onTone: setTone, onStop: setActive, onTick });
+    }, root);
 
     return () => {
       disposed = true;
-      removeEventListener("resize", onResize);
-      world?.dispose();
+      for (const c of cleanups) c();
       api.current?.destroy();
       ctx.revert();
       gsap.ticker.remove(raf);
       lenis?.destroy();
       smooth.current = null;
     };
-  }, []);
+  }, [mode, src]);
 
   function goToTick(tick: number) {
     const y = api.current?.goto(tick);
@@ -89,15 +117,14 @@ export default function Tour() {
   return (
     <section className="tour" ref={root} aria-label="Gharaana tour">
       <div className="stage" data-world={ready}>
-        <canvas ref={canvas} className="world" aria-hidden="true" />
-        <div className="wpins" aria-hidden="true">
-          {PINS.map((p) => (
-            <div key={p.id} className="wpin" data-wpin={p.id}>
-              <span className="wpin__chip">{p.label}</span>
-              <i className="wpin__dot" />
-            </div>
-          ))}
-        </div>
+        {mode === "video"
+          ? <video ref={video} className="world" src={src ?? undefined} muted playsInline preload="auto" aria-hidden="true" />
+          : <>
+              <canvas ref={canvas} className="world" aria-hidden="true" />
+              <div className="wpins" aria-hidden="true">
+                {PINS.map((p) => <div key={p.id} className="wpin" data-wpin={p.id}><span className="wpin__chip">{p.label}</span><i className="wpin__dot" /></div>)}
+              </div>
+            </>}
         <Close />
         <Hero />
         <Captions />

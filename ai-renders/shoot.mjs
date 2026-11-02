@@ -10,7 +10,7 @@ const STOPS = process.argv.length > 2
   ? Object.fromEntries(process.argv.slice(2).map((t) => [`t${t}`, +t]))
   : { sky: 12, tower: 27, inside: 58, plan: 76, hood: 90, evening: 109 };
 
-const tour = await openTour({ url: "http://localhost:3125/?debug&quality=high", width: 1600, height: 900, port: 9333 });
+const tour = await openTour({ url: "http://localhost:3125/?debug&quality=high&mode=3d", width: 1600, height: 900, port: 9333 });
 try {
   for (const [name, tick] of Object.entries(STOPS)) {
     await tour.setTick(tick, 30); // let the reflection capture and shadows settle

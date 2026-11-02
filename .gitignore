@@ -47,3 +47,7 @@ next-env.d.ts
 .chrome-profile/
 ai-renders/shots/
 ai-renders/.asset-cache/
+
+# scroll-scrub site videos, generated from ai-renders/videos/tour-real.mp4 by: python ai-renders/restyle.py --site
+public/tour-*.mp4
+__pycache__/

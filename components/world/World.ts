@@ -295,8 +295,9 @@ export function createWorld(canvas: HTMLCanvasElement, opts: { reduced: boolean;
     const low = pw(LIGHT.lowClouds, tick), high = pw(LIGHT.skyClouds, tick);
     lowClouds.g.visible = low > 0.01;
     skyClouds.g.visible = high > 0.01;
-    for (const m of lowClouds.mats) { m.opacity = low * 0.92; m.color.copy(cloudC); }
-    for (const m of skyClouds.mats) { m.opacity = high * 0.95; m.color.copy(cloudC); }
+    // kept translucent: dense sprite "cotton balls" read as fake (and the photoreal video pass copies their shape)
+    for (const m of lowClouds.mats) { m.opacity = low * 0.55; m.color.copy(cloudC); }
+    for (const m of skyClouds.mats) { m.opacity = high * 0.6; m.color.copy(cloudC); }
     for (const m of farClouds.mats) { m.opacity = 0.9; m.color.copy(cloudC); }
     birds.group.visible = pw(LIGHT.birds, tick) > 0.01;
     birds.update(time);

@@ -10,12 +10,13 @@ import { join } from "node:path";
 import { KEYS } from "../components/world/path.ts";
 import { openTour } from "./cdp.mjs";
 
-const FPS = 24, W = 1280, H = 720;
-// Where restyle.py cuts the video into AI segments, in ticks: moments the frame is naturally "passing through"
-// something (cloud deck, the doorway, the ceiling, a cloud on the way down). The joined video dips to white there.
-const CUT_TICKS = [18.5, 50.5, 65.65, 92];
-// seconds for each stretch between KEYS (17 stretches for 18 keys); chosen so the gaps between the cuts stay under
-// the 10 s the video model accepts per call
+const FPS = 24, W = 1920, H = 1080; // 1080p source: more fine detail for the photoreal pass to keep
+// Where restyle.py starts each new AI segment, in seconds: calm moments of the camera move (orbit, approach,
+// living-room hold, plan hold, start of the final tilt). Each segment after the first also gets CONTEXT seconds of
+// the previous segment's finished footage prepended, and the model accepts at most 10 s per call.
+const SEAMS = [9.5, 12.7, 20.6, 27.8, 33.4];
+export const CONTEXT = 1.5;
+// seconds for each stretch between KEYS (17 stretches for 18 keys)
 const SECS = [3.0, 3.0, 2.6, 2.3, 1.8, 1.6, 1.6, 1.5, 3.2, 2.4, 2.4, 2.4, 2.2, 2.6, 3.0, 3.6, 2.6];
 if (SECS.length !== KEYS.length - 1) throw new Error("SECS must have one entry per stretch of KEYS");
 const T = SECS.reduce((acc, s) => [...acc, acc[acc.length - 1] + s], [0]); // time of each key
@@ -41,22 +42,22 @@ function tickAt(t) {
 }
 export const tickAtTime = tickAt;
 
-/** First frame at or past each of CUT_TICKS: restyle.py cuts its segments exactly there. */
+/** Frame index of each seam: restyle.py starts a new segment there. */
 export function cutFrames() {
-  const total = Math.round(DURATION * FPS);
-  return CUT_TICKS.map((c) => { let f = 0; while (f < total && tickAt(f / FPS) < c) f++; return f; });
+  return SEAMS.map((s) => Math.round(s * FPS));
 }
 
 if (import.meta.main) {
   const DIR = join(import.meta.dirname, "videos"), FRAMES = join(DIR, "frames");
   const cuts = cutFrames(), bounds = [0, ...cuts, Math.round(DURATION * FPS)];
   const lengths = bounds.slice(1).map((b, i) => (b - bounds[i]) / FPS);
-  console.log("cuts at", cuts.map((c) => (c / FPS).toFixed(2) + "s").join(", "), "| segments", lengths.map((l) => l.toFixed(2)).join(", "));
-  if (lengths.some((l) => l > 9.9)) throw new Error("a segment is over 10 s; adjust SECS or CUT_TICKS");
-  writeFileSync(join(DIR, "tour-3d.json"), JSON.stringify({ fps: FPS, frames: Math.round(DURATION * FPS) + 1, cuts }));
+  console.log("seams at", cuts.map((c) => (c / FPS).toFixed(2) + "s").join(", "), "| new seconds per segment", lengths.map((l) => l.toFixed(2)).join(", "));
+  // what each call sends: first segment alone, the rest with CONTEXT prepended
+  if (lengths.some((l, i) => l + (i ? CONTEXT : 0) > 9.9)) throw new Error("a call would exceed 10 s; adjust SEAMS");
+  writeFileSync(join(DIR, "tour-3d.json"), JSON.stringify({ fps: FPS, frames: Math.round(DURATION * FPS) + 1, cuts, context: CONTEXT }));
   rmSync(FRAMES, { recursive: true, force: true });
   mkdirSync(FRAMES, { recursive: true });
-  const tour = await openTour({ url: "http://localhost:3125/?debug&quality=high", width: W, height: H, port: 9334 });
+  const tour = await openTour({ url: "http://localhost:3125/?debug&quality=high&mode=3d", width: W, height: H, port: 9334 });
   try {
     // warm up every part of the path once so shader compiles and sky rebuilds don't land in the recording
     for (let t = 0; t <= 110; t += 5) await tour.setTick(t, 4);

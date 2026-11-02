@@ -11,7 +11,7 @@
 .sc-close { visibility: hidden; z-index: 4; }
 
 /* The 3D world: one canvas, one camera. */
-.world { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 1.4s var(--ease-out); }
+.world { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; opacity: 0; transition: opacity 1.4s var(--ease-out); background: #e8e6e2; }
 .stage[data-world="ready"] .world { opacity: 1; }
 .stage::after {
   content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1;
