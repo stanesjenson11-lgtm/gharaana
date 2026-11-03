@@ -153,6 +153,24 @@ export function buildTower() {
   add(lower, lowR, lo.rail, false); add(upper, upR, up.rail, false);
   add(lower, lowM, lo.metal); add(upper, upM, up.metal);
   add(upper, [slab(outline(-1, -7), TOWER_TOP, 4.2)], up.concrete);
+  // photo rooftops (made with Gemini, public/tex): solar/plants/tanks on the main roof, AC units on the plant room
+  const roofPhoto = (name: string, pts: { x: number; z: number }[], y: number) => {
+    const g = new THREE.ShapeGeometry(new THREE.Shape(pts.map((p) => new THREE.Vector2(p.x, -p.z))));
+    g.rotateX(-Math.PI / 2);
+    g.translate(0, y, 0);
+    g.computeBoundingBox();
+    const b = g.boundingBox!, w = b.max.x - b.min.x, d = b.max.z - b.min.z;
+    const t = new THREE.TextureLoader().load(`/tex/${name}.jpg`);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8;
+    t.repeat.set(1 / w, 1 / d); // ShapeGeometry's uv is the shape's (x, -z): fit the picture to the roof once
+    t.offset.set(-b.min.x / w, b.max.z / d);
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: t, roughness: 0.9, transparent: true }));
+    m.receiveShadow = true;
+    upper.add(m);
+  };
+  roofPhoto("roof1", outline(-1, 0.6), TOWER_TOP + 0.02);
+  roofPhoto("roof0", outline(-1, -7), TOWER_TOP + 4.22);
 
   // Recessed lobby under the first slab, and the two yellow lines of the logo painted on the first two slab edges.
   lower.add(new THREE.Mesh(ribbon(outline(-1, -2), 0, T.base), lobby));

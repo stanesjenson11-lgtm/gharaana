@@ -18,13 +18,18 @@ export const KEYS: Key[] = [
   { t: 51, p: [0.9, 89.4, 12.3], q: [-0.6, 89.0, 7.6], fov: 54 }, // through the glass
   { t: 58, p: [0.4, 89.6, 12.35], q: [-4.2, 88.45, 9.2], fov: 60, hold: true }, // the living room
   { t: 63, p: [0.2, 89.8, 11.9], q: [-2.0, 88.4, 7.6], fov: 58 },
-  { t: 69, p: [0.2, 99, 8.6], q: [0, 87.9, 8.5], fov: 52 }, // up through the ceiling
-  { t: 76, p: [0, 124, 1.5], q: [0, 87.9, 1.4], fov: 46, hold: true }, // the whole floor as a plan: this flat and its neighbours
-  { t: 82, p: [0, 190, 30], q: [0, 0, 29.5], fov: 44 },
-  { t: 90, p: [0, 560, 62], q: [0, 0, 61], fov: 42, hold: true }, // the neighbourhood, tower in the middle
-  { t: 96, p: [-150, 330, 400], q: [0, 70, 30], fov: 40 },
-  { t: 104, p: [-158, 96, 236], q: [-34, 86, 0], fov: 40, hold: true }, // evening
-  { t: 110, p: [-142, 92, 214], q: [-34, 86, 0], fov: 40 },
+  // one crane move from the room to the plan: rise toward ceiling height while tilting down (the ceiling never enters
+  // the frame), then straight up; the ceiling and floors above are removed while out of view (LIGHT.upper)
+  { t: 66, p: [-1.2, 90.5, 11.2], q: [-2.4, 87.92, 9.4], fov: 56 }, // 2.6 m up, looking down at the living area
+  { t: 69, p: [-1.5, 94, 10.2], q: [-1.5, 87.9, 10.1], fov: 54 }, // straight down: wall tops become the cutaway
+  { t: 72, p: [-1.0, 100, 9.0], q: [-1.0, 87.9, 8.9], fov: 50 }, // the whole flat
+  { t: 76, p: [0, 118, 3], q: [0, 87.9, 2.9], fov: 46, hold: true }, // the whole floor as a plan: this flat and its neighbours
+  { t: 82, p: [0, 200, 25], q: [0, 0, 24.5], fov: 44 },
+  { t: 90, p: [0, 560, 62], q: [0, 0, 61], fov: 42, hold: true }, // the neighbourhood, tower complete again
+  // back down to exactly where the film began (t0): same camera, same light and haze, so the last frame matches the first
+  { t: 96, p: [-50, 380, 200], q: [0, 90, 20], fov: 40 },
+  { t: 104, p: [-92, 182, 206], q: [0, 132, 0], fov: 38, hold: true }, // settling into the opening view
+  { t: 110, p: [-96, 178, 214], q: [0, 132, 0], fov: 38 }, // = the t0 key
 ];
 
 const pos = new THREE.CatmullRomCurve3(KEYS.map((k) => new THREE.Vector3(...k.p)), false, "centripetal");
@@ -60,20 +65,25 @@ export function pw(table: [number, number][], t: number) {
 }
 
 export const LIGHT = {
-  // morning sun from behind the camera, high over the room, then low and golden at sunset (the tour ends there)
-  sunElev: [[0, 15], [22, 18], [44, 22], [66, 24], [90, 34], [97, 14], [103, 5], [110, 3]] as [number, number][],
-  sunAzim: [[0, 48], [44, 40], [66, 40], [90, 30], [100, 66], [110, 72]] as [number, number][],
-  golden: [[0, 0], [93, 0], [100, 1]] as [number, number][],
+  // morning sun from behind the camera, high over the room, then back to the opening's morning light at the end
+  sunElev: [[0, 15], [22, 18], [44, 22], [66, 24], [90, 34], [98, 18], [104, 15], [110, 15]] as [number, number][],
+  sunAzim: [[0, 48], [44, 40], [66, 40], [90, 30], [104, 48], [110, 48]] as [number, number][],
+  // no golden end: the tour returns to the opening view in the same light, so the last frame matches the first
+  golden: [[0, 0]] as [number, number][],
   // indoors gets far less sky light than outdoors, so sun patches and lamps read
   ambient: [[0, 1], [47, 1], [51, 0.38], [64, 0.38], [69, 0.8], [80, 0.8], [86, 1]] as [number, number][],
-  mist: [[0, 1], [12, 1], [22, 0]] as [number, number][],
-  lowClouds: [[0, 1], [14, 1], [21, 0]] as [number, number][],
+  // a light haze, not a white sheet: thick mist only half-covers dark trees and cars, which read as specks
+  mist: [[0, 0.5], [12, 0.5], [22, 0], [96, 0], [106, 0.5]] as [number, number][],
+  lowClouds: [[0, 1], [14, 1], [21, 0], [96, 0], [106, 1]] as [number, number][],
   skyClouds: [[0, 1], [76, 1], [80, 0], [94, 0], [99, 1]] as [number, number][],
   birds: [[0, 0]] as [number, number][], // kept off; birds will be overlaid later
   beams: [[0, 0], [47, 0], [51, 1], [63, 1], [66, 0]] as [number, number][],
-  exposure: [[0, 1.0], [46, 1.0], [50.5, 1.45], [64, 1.45], [70, 1.15], [80, 1.15], [86, 1.0], [98, 1.0], [104, 1.25], [110, 1.3]] as [number, number][],
-  lift: [[0, 0], [63, 0], [68, 1], [84, 1], [90, 0]] as [number, number][],
-  upper: [[0, 1], [63.5, 1], [67, 0], [85, 0], [89.5, 1]] as [number, number][],
+  exposure: [[0, 1.0], [46, 1.0], [50.5, 1.45], [64, 1.45], [70, 1.15], [80, 1.15], [86, 1.0]] as [number, number][],
+  // floors 25+ (and the ceiling) vanish at t66.5 while the camera already looks down (out of frame); as the camera rises
+  // above the tower the roof closes back over the plan (about 1 s, tower half to a third of the frame), so every high
+  // view shows a real, covered rooftop; nothing lifts
+  lift: [[0, 0]] as [number, number][],
+  upper: [[0, 1], [66.4, 1], [66.6, 0], [82.3, 0], [83.6, 1]] as [number, number][],
   ao: [[0, 4], [46, 4], [50, 0.7], [80, 0.7], [86, 4]] as [number, number][],
   pins: [[0, 0], [86, 0], [88.5, 1], [94.5, 1], [96.5, 0]] as [number, number][],
   // the flat's window: facade glass from afar, clearing as we arrive (1 = facade look), then the door slides open

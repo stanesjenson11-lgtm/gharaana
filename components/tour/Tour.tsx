@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Lenis from "lenis";
@@ -33,7 +33,7 @@ export default function Tour() {
   // browser-only values, read without a setState-in-effect (server render: video mode, no src yet)
   const mode = useSyncExternalStore(noop, () => (new URLSearchParams(location.search).get("mode") === "3d" ? "3d" : "video"), () => "video");
   // both files are all-intra (every frame a keyframe) so scroll seeks are instant; small screens get the lighter one
-  const src = useSyncExternalStore(noop, () => (innerWidth >= 1280 ? "/tour-1080.mp4?v=4" : "/tour-720.mp4?v=4"), () => null);
+  const src = useSyncExternalStore(noop, () => (innerWidth >= 1280 ? "/tour-1080.mp4?v=11" : "/tour-720.mp4?v=11"), () => null);
 
   useEffect(() => {
     if (mode === "video" && !src) return; // wait until the file for this screen size is chosen
@@ -77,7 +77,17 @@ export default function Tour() {
       };
       const onSeeked = () => { seeking = false; if (Math.abs(want - last) >= FRAME) seek(); };
       v.addEventListener("seeked", onSeeked);
-      onTick = (t) => { want = (t / TOTAL) * (v.duration || 0); seek(); };
+      // tick -> video time: the recording spends different seconds per tick, so look the frame up in its tick table
+      // (binary search over a rising list); until the table loads, fall back to a straight proportion
+      let ticks: number[] | null = null, fps = 24;
+      fetch("/tour-timing.json?v=11").then((r) => r.json()).then((j: { fps: number; ticks: number[] }) => { ticks = j.ticks; fps = j.fps; }).catch(() => undefined);
+      const timeAt = (t: number) => {
+        if (!ticks) return (t / TOTAL) * (v.duration || 0);
+        let lo = 0, hi = ticks.length - 1;
+        while (lo < hi) { const mid = (lo + hi) >> 1; if (ticks[mid] < t) lo = mid + 1; else hi = mid; }
+        return lo / fps;
+      };
+      onTick = (t) => { want = timeAt(t); seek(); };
       cleanups.push(() => { v.removeEventListener("loadedmetadata", onLoaded); v.removeEventListener("error", onError); v.removeEventListener("seeked", onSeeked); });
     } else {
       onTick = (t) => { lastTick = t; world?.setTick(t); };

@@ -10,7 +10,6 @@ import { buildTower, TOWER_TOP } from "./tower";
 import { buildFloor } from "./interior";
 import { buildCity, PARK, RIVER } from "./city";
 import { buildBirds } from "./birds";
-import { cloudTexture } from "./textures";
 import { MIST, addMistTo } from "./mist";
 import { LIGHT, cameraAt, pw } from "./path";
 import { pickQuality } from "./quality";
@@ -86,7 +85,12 @@ export function createWorld(canvas: HTMLCanvasElement, opts: { reduced: boolean;
   for (const g of [tower.lower, tower.upper, city.group]) addMistTo(g);
 
   /* ---- clouds: low wisps between the towers, cumulus in the sky, a bank on the horizon ---- */
-  const cloudTex = [3, 8, 15, 22].map((s) => cloudTexture(s));
+  // real cumulus photos (made with Gemini, ai-renders/textures.py) instead of drawn blobs
+  const cloudTex = [0, 1, 2, 0].map((k) => {
+    const t = new THREE.TextureLoader().load(`/tex/cloud${k}.png`);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  });
   const layer = (n: number, seed: number, place: (r: () => number) => [number, number, number, number]) => {
     const g = new THREE.Group();
     const mats = cloudTex.map((t) => new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, fog: true }));
@@ -228,7 +232,7 @@ export function createWorld(canvas: HTMLCanvasElement, opts: { reduced: boolean;
     sunDir.setFromSphericalCoords(1, phi, theta);
     sky.material.uniforms.sunPosition.value.copy(sunDir);
     envSky.material.uniforms.sunPosition.value.copy(sunDir);
-    const key = `${elevDeg.toFixed(1)}|${azDeg.toFixed(0)}`;
+    const key = `${elevDeg.toFixed(2)}|${azDeg.toFixed(2)}`;
     if (key !== envKey) {
       envKey = key;
       const te = performance.now();
@@ -243,8 +247,9 @@ export function createWorld(canvas: HTMLCanvasElement, opts: { reduced: boolean;
   function update(tick: number, time: number, dt: number) {
     const fov = cameraAt(tick, P, Q);
     camera.position.copy(P);
-    // Looking straight down needs a different "up".
-    const down = THREE.MathUtils.clamp((P.y - Q.y) / (P.distanceTo(Q) + 1e-6) - 0.85, 0, 0.15) / 0.15;
+    // Looking straight down needs a different "up". Eased in over a wide tilt range: a hard start here made the camera
+    // whip sideways mid crane-up (the AI video read it as a cut).
+    const down = THREE.MathUtils.smoothstep((P.y - Q.y) / (P.distanceTo(Q) + 1e-6), 0.6, 0.98);
     up.set(0, 1 - down, -down).normalize();
     camera.up.copy(up);
     camera.lookAt(Q);
@@ -272,7 +277,7 @@ export function createWorld(canvas: HTMLCanvasElement, opts: { reduced: boolean;
 
     // shadows follow what we're looking at, tight indoors, wide outdoors
     const R = THREE.MathUtils.clamp(dist * 0.7, 9, 360);
-    if (Math.abs(R - shadowR) > R * 0.08) {
+    if (Math.abs(R - shadowR) > R * (q.record ? 0 : 0.08)) {
       shadowR = R;
       const c = sun.shadow.camera;
       c.left = c.bottom = -R; c.right = c.top = R; c.near = 1; c.far = R * 2 + 1200;
@@ -296,7 +301,7 @@ export function createWorld(canvas: HTMLCanvasElement, opts: { reduced: boolean;
     lowClouds.g.visible = low > 0.01;
     skyClouds.g.visible = high > 0.01;
     // kept translucent: dense sprite "cotton balls" read as fake (and the photoreal video pass copies their shape)
-    for (const m of lowClouds.mats) { m.opacity = low * 0.55; m.color.copy(cloudC); }
+    for (const m of lowClouds.mats) { m.opacity = low * 0.3; m.color.copy(cloudC); }
     for (const m of skyClouds.mats) { m.opacity = high * 0.6; m.color.copy(cloudC); }
     for (const m of farClouds.mats) { m.opacity = 0.9; m.color.copy(cloudC); }
     birds.group.visible = pw(LIGHT.birds, tick) > 0.01;
@@ -312,11 +317,11 @@ export function createWorld(canvas: HTMLCanvasElement, opts: { reduced: boolean;
       m.opacity = base * upOp;
       m.depthWrite = upOp > 0.98 && base >= 1;
     }
-    floor.ceilingBits.visible = upOp > 0.5;
-    floor.others.visible = upOp <= 0.5; // the rest of the floor is only seen from above
+    floor.ceilingBits.visible = upOp > 0.98;
+    floor.others.visible = upOp < 0.98; // the rest of the floor is only seen from above (kept under the closing roof)
     tower.setWindow(pw(LIGHT.windowCover, tick), pw(LIGHT.doorOpen, tick));
     // the flat is only drawn while the camera is close enough to see into it
-    floor.group.visible = tick > 36 && tick < 89;
+    floor.group.visible = tick > 36 && tick < 83.7; // hidden once the roof is back (LIGHT.upper)
     floor.update(time, pw(LIGHT.beams, tick) * THREE.MathUtils.clamp(elev / 10, 0, 1));
 
     // ambient occlusion radius: centimetres of furniture indoors, metres of street outdoors

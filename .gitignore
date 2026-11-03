@@ -48,6 +48,6 @@ next-env.d.ts
 ai-renders/shots/
 ai-renders/.asset-cache/
 
-# scroll-scrub site videos, generated from ai-renders/videos/tour-real.mp4 by: python ai-renders/restyle.py --site
-public/tour-*.mp4
+# the scroll-scrub site videos (public/tour-1080.mp4, tour-720.mp4, ~30 MB, made by python ai-renders/oneshot.py)
+# are committed so a Git deploy has them
 __pycache__/

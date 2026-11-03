@@ -48,7 +48,7 @@ Source: `C:\Users\stane\Downloads\Gharaana - brand kit.pdf` (July 2024).
 - Reference reel `C:\Users\stane\Downloads\Video-11527.mp4`: a scroll journey from clouds, to aerial, to a tower, to floor plans, then an isometric illustrated logistics world.
 - No Gharaana photography, renders, listings, testimonials, prices, or numbers. None may be fabricated as fact.
 - The tour is an illustrative real-time 3D model (three.js) dressed with CC0 Poly Haven textures and furniture, hotlinked from dl.polyhaven.org; self-host before launch. The footer labels it as illustrative.
-- User direction (confirmed in session): realistic renders over illustration; one continuous building, apartment, plan and neighbourhood; the tour ends at golden-hour sunset with no night or outdoor lights.
+- User direction (confirmed in session): realistic renders over illustration; one continuous building, apartment, plan and neighbourhood; the tour ends back on the opening view in the same morning light (changed from a golden-hour ending, Nov 2026), with no night or outdoor lights. Interior shots follow the colour grade of the photoreal living-room entry.
 
 ## Product Principles
 

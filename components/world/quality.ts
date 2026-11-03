@@ -13,6 +13,7 @@ type Settings = {
   exteriorDetail: boolean; // normal/roughness maps on streets and facades
   plazaProps: boolean; furniture: boolean; // downloaded models
   envStep: [number, number]; // degrees of sun movement before the sky light is rebuilt (elevation, azimuth)
+  record?: boolean; // ?record (video recording): light changes continuously, never in steps between frames
 };
 
 const TIERS: Record<Tier, Settings> = {
@@ -27,7 +28,9 @@ const TIERS: Record<Tier, Settings> = {
 export type Quality = Settings & { tier: Tier; saveData: boolean };
 
 export function pickQuality(): Quality {
-  const forced = new URLSearchParams(location.search).get("quality");
+  const params = new URLSearchParams(location.search);
+  const forced = params.get("quality");
+  const record = params.has("record");
   const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
   const saveData = nav.connection?.saveData === true;
   const coarse = matchMedia("(pointer: coarse)").matches;
@@ -37,5 +40,5 @@ export function pickQuality(): Quality {
     ? (forced as Tier)
     : saveData || (coarse && minSide < 600) ? "low" : coarse || weak ? "mid" : "high";
   // Data Saver: keep the procedural furniture rather than downloading ~15 MB of models.
-  return { ...TIERS[tier], tier, saveData, furniture: TIERS[tier].furniture && !saveData, plazaProps: TIERS[tier].plazaProps && !saveData };
+  return { ...TIERS[tier], tier, saveData, record, envStep: record ? [0.1, 0.1] : TIERS[tier].envStep, furniture: TIERS[tier].furniture && !saveData, plazaProps: TIERS[tier].plazaProps && !saveData };
 }

@@ -14,10 +14,13 @@ const FPS = 24, W = 1920, H = 1080; // 1080p source: more fine detail for the ph
 // Where restyle.py starts each new AI segment, in seconds: calm moments of the camera move (orbit, approach,
 // living-room hold, plan hold, start of the final tilt). Each segment after the first also gets CONTEXT seconds of
 // the previous segment's finished footage prepended, and the model accepts at most 10 s per call.
-const SEAMS = [9.5, 12.7, 20.6, 27.8, 33.4];
+// (the first three are unchanged so segments 1-3 stay valid; then one seam while rising straight down over the flat
+// and one at the top view, after the roof is back so the last segment starts from a complete tower)
+const SEAMS = [9.5, 12.7, 20.6, 28.9, 37.3];
 export const CONTEXT = 1.5;
 // seconds for each stretch between KEYS (17 stretches for 18 keys)
-const SECS = [3.0, 3.0, 2.6, 2.3, 1.8, 1.6, 1.6, 1.5, 3.2, 2.4, 2.4, 2.4, 2.2, 2.6, 3.0, 3.6, 2.6];
+// The first ten (up to the living room, tick 63) must not change: segments 1-3 were made from those frames.
+const SECS = [3.0, 3.0, 2.6, 2.3, 1.8, 1.6, 1.6, 1.5, 3.2, 2.4, 2.4, 2.4, 2.0, 2.4, 2.4, 3.0, 2.8, 3.2, 2.0];
 if (SECS.length !== KEYS.length - 1) throw new Error("SECS must have one entry per stretch of KEYS");
 const T = SECS.reduce((acc, s) => [...acc, acc[acc.length - 1] + s], [0]); // time of each key
 export const DURATION = T[T.length - 1];
@@ -55,14 +58,25 @@ if (import.meta.main) {
   // what each call sends: first segment alone, the rest with CONTEXT prepended
   if (lengths.some((l, i) => l + (i ? CONTEXT : 0) > 9.9)) throw new Error("a call would exceed 10 s; adjust SEAMS");
   writeFileSync(join(DIR, "tour-3d.json"), JSON.stringify({ fps: FPS, frames: Math.round(DURATION * FPS) + 1, cuts, context: CONTEXT }));
-  rmSync(FRAMES, { recursive: true, force: true });
-  mkdirSync(FRAMES, { recursive: true });
-  const tour = await openTour({ url: "http://localhost:3125/?debug&quality=high&mode=3d", width: W, height: H, port: 9334 });
+  // the page's scroll position is in ticks; the video's speed per tick varies, so the site maps tick -> frame with this
+  const ticks = Array.from({ length: Math.round(DURATION * FPS) + 1 }, (_, f) => +tickAt(f / FPS).toFixed(3));
+  writeFileSync(join(import.meta.dirname, "..", "public", "tour-timing.json"), JSON.stringify({ fps: FPS, ticks }));
+  // FROM=n: re-render only frames n+ and keep the earlier ones from the current tour-3d.mp4
+  // FROM=n KEEP=1: resume an interrupted recording; frames below n are already in videos/frames
+  const FROM = +(process.env.FROM ?? 0);
+  if (!process.env.KEEP) {
+    rmSync(FRAMES, { recursive: true, force: true });
+    mkdirSync(FRAMES, { recursive: true });
+    if (FROM) execFileSync("ffmpeg", ["-v", "error", "-i", join(DIR, "tour-3d.mp4"), "-frames:v", String(FROM),
+      "-start_number", "0", "-q:v", "2", join(FRAMES, "%05d.jpg")]);
+  }
+  const tour = await openTour({ url: "http://localhost:3125/?debug&quality=high&mode=3d&record", width: W, height: H, port: 9334 });
   try {
     // warm up every part of the path once so shader compiles and sky rebuilds don't land in the recording
     for (let t = 0; t <= 110; t += 5) await tour.setTick(t, 4);
     const total = Math.round(DURATION * FPS);
-    for (let f = 0; f <= total; f++) {
+    const TO = Math.min(total, +(process.env.TO ?? total)); // TO=n (with KEEP=1): stop after frame n, keep the rest
+    for (let f = FROM; f <= TO; f++) {
       await tour.setTick(tickAt(f / FPS), 3);
       writeFileSync(join(FRAMES, `${String(f).padStart(5, "0")}.jpg`), await tour.shot());
       if (f % 120 === 0) console.log(`frame ${f}/${total}`);

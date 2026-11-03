@@ -19,14 +19,28 @@ export const POOL = { x: 0, z: 40 };
 
 const isRiverRow = (j: number) => j === 2;
 
-/** Facade shader in world space: windows and floor bands for concrete, mullions and panels for glass. */
+/** Photoreal surfaces made with Gemini (ai-renders/textures.py, public/tex): 4 facades (4 floors x 4 bays each), 2 roofs. */
+function photoTex(name: string, repeat: boolean) {
+  const t = new THREE.TextureLoader().load(`/tex/${name}.jpg`);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = repeat ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
+  t.anisotropy = 8;
+  return t;
+}
+
+/** Facade shader in world space: photo facades and rooftops for concrete, mullions and panels for glass. */
 function facadeMaterial(kind: "concrete" | "glass") {
   const m = kind === "glass"
     ? new THREE.MeshStandardMaterial({ color: 0x9db1c4, metalness: 0.82, roughness: 0.1, envMapIntensity: 1.15 })
     : new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.82, metalness: 0 });
+  const photos = kind === "concrete"
+    ? { uFac0: photoTex("facade0", true), uFac1: photoTex("facade1", true), uFac2: photoTex("facade2", true),
+        uFac3: photoTex("facade3", true), uRoof0: photoTex("roof0", false), uRoof1: photoTex("roof1", false) }
+    : {};
   m.onBeforeCompile = (s) => {
+    for (const [k, t] of Object.entries(photos)) s.uniforms[k] = { value: t };
     s.vertexShader = s.vertexShader
-      .replace("#include <common>", "#include <common>\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec3 vInstC;\nvarying float vInstTop;")
+      .replace("#include <common>", "#include <common>\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec3 vInstC;\nvarying float vInstTop;\nvarying vec2 vInstS;")
       .replace(
         "#include <worldpos_vertex>",
         `#include <worldpos_vertex>
@@ -40,9 +54,11 @@ function facadeMaterial(kind: "concrete" | "glass") {
         vWNorm = normalize(mat3(modelMatrix) * wn);
         vInstC = vec3(0.0);
         vInstTop = 1e5;
+        vInstS = vec2(1.0);
         #ifdef USE_INSTANCING
           vInstC = (modelMatrix * vec4(instanceMatrix[3].xyz, 1.0)).xyz;
           vInstTop = vInstC.y + length(instanceMatrix[1].xyz);
+          vInstS = vec2(length(instanceMatrix[0].xyz), length(instanceMatrix[2].xyz));
         #endif`,
       );
     const common = `#include <common>
@@ -50,6 +66,8 @@ function facadeMaterial(kind: "concrete" | "glass") {
       varying vec3 vWNorm;
       varying vec3 vInstC;
       varying float vInstTop;
+      varying vec2 vInstS;
+      ${kind === "concrete" ? "uniform sampler2D uFac0, uFac1, uFac2, uFac3, uRoof0, uRoof1;" : ""}
       float h31(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }`;
     const facade = kind === "glass"
       ? `vec3 wN = normalize(vWNorm);
@@ -90,13 +108,28 @@ function facadeMaterial(kind: "concrete" | "glass") {
         diffuseColor.rgb = mix(diffuseColor.rgb, glassC, pane);
         diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 0.62, frame);
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.07, 0.09, 0.11), shop * 0.92);
-        diffuseColor.rgb *= 1.0 + band * 0.08 + parapet * 0.1;`;
+        diffuseColor.rgb *= 1.0 + band * 0.08 + parapet * 0.1;
+        // photo facade above the shop floor, one design per building (4 floors x 4 bays per tile = 11.2 m x 13.6 m)
+        float bsel = h31(floor(vInstC * 0.37) + 0.5);
+        vec2 fuv = vec2(hc / 11.2 + bsel * 7.0, (vWPos.y - 4.0) / 13.6);
+        vec3 fA = texture2D(uFac0, fuv).rgb, fB = texture2D(uFac1, fuv).rgb, fC = texture2D(uFac2, fuv).rgb, fD = texture2D(uFac3, fuv).rgb;
+        vec3 photo = bsel < 0.25 ? fA : bsel < 0.5 ? fB : bsel < 0.75 ? fC : fD;
+        float useTex = side * upper * (1.0 - parapet);
+        diffuseColor.rgb = mix(diffuseColor.rgb, photo, useTex);
+        // dark panes in the photo get glass reflections
+        float texGloss = useTex * (1.0 - smoothstep(0.07, 0.25, dot(photo, vec3(0.333))));
+        pane *= 1.0 - useTex;
+        // photo rooftop: the whole roof of each building is one picture
+        float roofTop = step(0.5, wN.y);
+        vec2 ruv = clamp((vWPos.xz - vInstC.xz) / vInstS + 0.5, 0.0, 1.0);
+        vec3 roofPhoto = h31(floor(vInstC * 0.53) + 1.5) < 0.5 ? texture2D(uRoof0, ruv).rgb : texture2D(uRoof1, ruv).rgb;
+        diffuseColor.rgb = mix(diffuseColor.rgb, roofPhoto, roofTop);`;
     const glassRough = kind === "glass"
       ? "roughnessFactor = mix(roughnessFactor, 0.05 + 0.12 * tint, pane);\nroughnessFactor = mix(roughnessFactor, 0.85, roof);"
-      : "roughnessFactor = mix(roughnessFactor, 0.06 + 0.3 * (curtain + blind), pane);\nroughnessFactor = mix(roughnessFactor, 0.05, shop);";
+      : "roughnessFactor = mix(roughnessFactor, 0.06 + 0.3 * (curtain + blind), pane);\nroughnessFactor = mix(roughnessFactor, 0.05, shop);\nroughnessFactor = mix(roughnessFactor, 0.12, texGloss);";
     const glassMetal = kind === "glass"
       ? "metalnessFactor = mix(metalnessFactor, 0.0, roof);"
-      : "metalnessFactor = mix(metalnessFactor, 0.6 * (1.0 - curtain - blind), pane);\nmetalnessFactor = mix(metalnessFactor, 0.7, shop);";
+      : "metalnessFactor = mix(metalnessFactor, 0.6 * (1.0 - curtain - blind), pane);\nmetalnessFactor = mix(metalnessFactor, 0.7, shop);\nmetalnessFactor = mix(metalnessFactor, 0.5, texGloss);";
     s.fragmentShader = s.fragmentShader
       .replace("#include <common>", common)
       .replace("#include <color_fragment>", `#include <color_fragment>\n${facade}`)
