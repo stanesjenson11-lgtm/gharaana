@@ -54,7 +54,7 @@ html.lenis, html.lenis body { height: auto; }
 @keyframes tour-fade { from { opacity: 0; } }
 .search { animation: tour-rise 1.1s var(--ease-out) 0.35s both; }
 .nav { animation: tour-fade 1s var(--ease-out) 0.5s both; }
-.stage::after, .depth::after {
+.stage::after {
   content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1;
   background: radial-gradient(130% 95% at 50% 45%, transparent 60%, color-mix(in oklab, var(--ink) 26%, transparent) 100%);
 }
@@ -74,30 +74,45 @@ html.lenis, html.lenis body { height: auto; }
 }
 
 /* ============ Hero ============ */
-/* Covers the whole stage, so the tower cut-outs (.depth) line up with the poster: title up in the sky, search low.
-   Inside, back to front: birds, title, towers, search. */
+/* The title is set in the film frame's own pixels. The frame is 1920×1080 scaled to cover the stage (like the poster),
+   so frame x lands at 50cqw + (x − 960)·k and frame y at 50cqh + (y − 540)·k. Frame 0's tower: x 824–1094, roof
+   y 391–415. "Step inside" sits above the roof; "your next" and "address." stand either side of the tower. */
 .hero {
+  --k: max(100cqw / 1920, 100cqh / 1080);
   position: absolute; inset: 0;
-  padding: clamp(5.5rem, 13cqh, 8.5rem) var(--gutter) clamp(2rem, 9cqh, 5.5rem);
-  display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center;
+  padding: 0 var(--gutter) clamp(2rem, 9cqh, 5.5rem);
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
   pointer-events: none; z-index: 3;
 }
+/* A graduated sky filter in the brand navy: the hazy sky behind "Step inside" measures 2.6:1 against white on its
+   own (1.6:1 at its brightest); this brings it past 3:1. It belongs to the hero, so the sky lifts as the film starts. */
+.hero::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg,
+    color-mix(in oklab, var(--ink) 54%, transparent) 0%, color-mix(in oklab, var(--ink) 50%, transparent) 34%,
+    color-mix(in oklab, var(--ink) 15%, transparent) 52%, transparent 66%);
+}
 .hero__title {
-  position: relative; z-index: 1;
-  margin: 0; font-family: var(--font-display); font-weight: 900;
-  font-size: clamp(3rem, 8.4vw, 8rem); line-height: 0.92; letter-spacing: -0.045em;
-  text-wrap: balance; color: #fff;
-  /* white on a hazy sky: a soft navy glow keeps the letters readable */
-  text-shadow: 0 1px 3px rgb(0 18 56 / 0.22), 0 8px 40px rgb(0 18 56 / 0.4);
+  /* as big as the half beside the tower allows ("your next" is about 4.4em wide) */
+  --f: min(124 * var(--k), (50cqw - 161 * var(--k) - var(--gutter)) / 4.6);
+  position: absolute; left: 0; right: 0; z-index: 1;
+  top: calc(50cqh - 178 * var(--k) - 0.92 * var(--f)); /* line 1 ends at frame y 362, its "p" clear of the roof */
+  margin: 0; padding-inline: var(--gutter);
+  font-family: var(--font-display); font-weight: 900; font-size: var(--f);
+  line-height: 0.92; letter-spacing: -0.04em; text-align: center; text-wrap: balance;
+  color: #fff;
+  text-shadow: 0 0.03em 0.06em color-mix(in oklab, var(--ink) 30%, transparent), 0 0.08em 0.5em color-mix(in oklab, var(--ink) 45%, transparent);
 }
 .hero__line { display: block; }
-
-/* public/tour-depth.svg is the two towers' outline in the 1920×1080 frame; "cover" scales it exactly like the poster. */
-/* Not fully opaque: the letters show faintly through the glass, so a tower never hides a whole letter. */
-.depth {
-  position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0.8;
-  -webkit-mask: url(/tour-depth.svg?v=13) center / cover no-repeat;
-  mask: url(/tour-depth.svg?v=13) center / cover no-repeat;
+/* frame y 428: just under the roof. The middle column is the tower plus a margin each side. */
+.hero__split { display: grid; grid-template-columns: 1fr calc(322 * var(--k)) 1fr; margin-top: calc(66 * var(--k)); }
+.hero__split > :first-child { justify-self: end; }
+.hero__split > :last-child { grid-column: 3; justify-self: start; }
+/* Below 3:2 the frame's sides are cropped and the halves would not fit beside the tower: the title stacks in the sky
+   above the roof instead. */
+@media (max-aspect-ratio: 3/2) {
+  .hero__title { --f: clamp(2.75rem, 10.5cqw, 5.5rem); top: auto; bottom: calc(50cqh + 172 * var(--k)); }
+  .hero__split { display: block; margin-top: 0; }
 }
 
 .birds { position: absolute; inset: 0; overflow: clip; pointer-events: none; }
@@ -217,6 +232,13 @@ html.lenis, html.lenis body { height: auto; }
   .nav__actions { gap: 0.35rem; }
   .caps { width: calc(100% - 2 * var(--gutter) - 1.5rem); }
   .nav .btn--sm { padding: 0.5rem 0.95rem; }
+}
+/* Logo and both buttons in one row down to 360px. */
+@media (max-width: 26rem) {
+  .nav { padding-inline: 1rem; }
+  .nav__mark { height: 1.55rem; }
+  .nav__actions { gap: 0.3rem; }
+  .nav .btn--sm { padding: 0.5rem 0.7rem; font-size: 0.85rem; }
   .sc-close::before { background: linear-gradient(0deg, color-mix(in oklab, var(--ink) 85%, transparent) 0%, color-mix(in oklab, var(--ink) 55%, transparent) 55%, transparent 90%); }
   .sc-close { align-items: flex-end; }
 }

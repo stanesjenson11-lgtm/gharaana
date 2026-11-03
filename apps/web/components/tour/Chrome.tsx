@@ -2,20 +2,9 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { RENTALS } from "@/lib/search";
-import { FILM_V, LOGO_V, STOPS } from "./config";
+import { LOGO_V, STOPS } from "./config";
 
 type Tone = "ink" | "paper";
-
-/** Frame 0 of the film (the page's largest image); phones get the 1280 one. */
-export function Poster({ priority = false }: { priority?: boolean }) {
-  return (
-    <picture>
-      <source type="image/avif" srcSet={`/tour-poster-1280.avif${FILM_V} 1280w, /tour-poster-1920.avif${FILM_V} 1920w`} sizes="100vw" />
-      <img className="poster" src={`/tour-poster-1280.webp${FILM_V}`} srcSet={`/tour-poster-1280.webp${FILM_V} 1280w, /tour-poster-1920.webp${FILM_V} 1920w`}
-        sizes="100vw" alt="" aria-hidden="true" fetchPriority={priority ? "high" : undefined} />
-    </picture>
-  );
-}
 
 /* ---------- Birds: a few crows crossing the sky, left to right (CSS only; hidden with reduced motion) ---------- */
 
@@ -50,13 +39,11 @@ export function Hero() {
   return (
     <div className="hero" data-hero>
       <Birds />
+      {/* On wide screens the film's tower stands in the gap between "your next" and "address." (tour.css) */}
       <h1 className="hero__title">
         <span className="hero__line">Step inside</span>
-        <span className="hero__line">your next address.</span>
+        <span className="hero__line hero__split"><span>your next</span> <span>address.</span></span>
       </h1>
-      {/* Two towers cut from the same frame and laid over the title, so the words pass behind them
-          (public/tour-depth.svg: their outlines in the 1920×1080 frame, scaled like the poster). */}
-      <div className="depth" data-depth aria-hidden="true"><Poster /></div>
 
       <form className="search" role="search" action="/search" method="get" aria-label="Search homes">
         <fieldset className="search__modes">

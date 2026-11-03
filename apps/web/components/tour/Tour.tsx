@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type Lenis from "lenis";
 import type { buildTour } from "./timeline";
-import { Captions, Close, Hero, Nav, Poster } from "./Chrome";
+import { Captions, Close, Hero, Nav } from "./Chrome";
 import { FILM_V as V, TOTAL } from "./config";
 import type { World } from "@/components/world/World";
 import "./tour.css";
@@ -151,7 +151,12 @@ export default function Tour() {
       <div className="stage" data-world={ready}>
         {mode === "video"
           ? <>
-              <Poster priority />
+              {/* frame 0 of the film, the page's largest image; phones get the 1280 one */}
+              <picture>
+                <source type="image/avif" srcSet={`/tour-poster-1280.avif${V} 1280w, /tour-poster-1920.avif${V} 1920w`} sizes="100vw" />
+                <img className="poster" src={`/tour-poster-1280.webp${V}`} srcSet={`/tour-poster-1280.webp${V} 1280w, /tour-poster-1920.webp${V} 1920w`}
+                  sizes="100vw" alt="" aria-hidden="true" fetchPriority="high" />
+              </picture>
               <video ref={video} className="world" src={awake && src ? src : undefined} muted playsInline preload="auto" aria-hidden="true" />
             </>
           : <>
