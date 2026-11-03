@@ -11,7 +11,8 @@ type AuthError = { code?: string; status?: number; message?: string };
 
 function explain(e: AuthError) {
   // 429 is the per-connection limit in lib/auth.ts, so it isn't about the number typed.
-  if (e.code === "INVALID_OTP") return "That code doesn't match. Check the SMS and try again.";
+  if (e.code === "INVALID_OTP") return "That code doesn't match. Check the message and try again.";
+  if (e.code === "INVALID_EMAIL") return "Enter a valid email address.";
   if (e.code === "OTP_EXPIRED") return "That code has expired. Send a new one.";
   if (e.code === "TOO_MANY_ATTEMPTS") return "Too many wrong codes. Send a new one.";
   if (e.code === "INVALID_PHONE_NUMBER") return "Enter a 10-digit Indian mobile number.";
@@ -52,6 +53,7 @@ export function PhoneSignIn({
   link = false,
   failed = false,
   notice,
+  sms = true,
 }: {
   next: string;
   providers: { google: boolean; apple: boolean };
@@ -59,11 +61,17 @@ export function PhoneSignIn({
   link?: boolean;
   failed?: boolean;
   notice?: string;
+  /** Text-message codes are set up (lib/sms.ts). Without them, signing in is by email code. */
+  sms?: boolean;
 }) {
   const router = useRouter();
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
+  // Confirming a mobile number (link) is always by text message; signing in can be by email or text message.
+  const [method, setMethod] = useState<"email" | "phone">(link || sms ? "phone" : "email");
+  const byEmail = method === "email";
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [check, setCheck] = useState(0); // a Turnstile token works once; a new key remounts the widget for a fresh one
   const [error, setError] = useState<string | null>(failed ? "We couldn't sign you in with that account. Try again, or use your mobile number." : null);
@@ -89,7 +97,7 @@ export function PhoneSignIn({
       // Closing the browser's passkey sheet is a choice, not an error.
       if (("code" in error && error.code === "AUTH_CANCELLED") || /cancel|abort|not allowed/i.test(error.message ?? "")) return;
       // 403 is the account itself (suspended, lib/auth.ts), so say what the server said
-      return setError(error.status === 403 && error.message ? error.message : "That passkey didn't work here. Sign in with your mobile number, then add a passkey under Account.");
+      return setError(error.status === 403 && error.message ? error.message : "That passkey didn't work here. Sign in with a code, then add a passkey under Account.");
     }
     router.replace(`/after-sign-in?next=${encodeURIComponent(next)}`);
   };
@@ -97,7 +105,7 @@ export function PhoneSignIn({
   const goSocial = (provider: "google" | "apple") => {
     setError(null);
     // The button is always shown, as in the design; until the client's Google keys are set it says so instead of failing.
-    if (!providers[provider]) return setError(`${provider === "google" ? "Google" : "Apple"} sign-in isn't switched on yet. Use your mobile number for now.`);
+    if (!providers[provider]) return setError(`${provider === "google" ? "Google" : "Apple"} sign-in isn't switched on yet. Use ${sms ? "your mobile number" : "an email code"} for now.`);
     setSigningIn(provider);
     // /after-sign-in sends team members to the console and asks everyone else for their mobile number if it's missing.
     authClient.signIn.social({
@@ -110,12 +118,10 @@ export function PhoneSignIn({
   const send = () =>
     start(async () => {
       setError(null);
-      const { error } = await authClient.phoneNumber.sendOtp({
-        phoneNumber: e164,
-        fetchOptions: {
-          headers: turnstileToken ? { "x-turnstile-token": turnstileToken } : {},
-        },
-      });
+      const fetchOptions = { headers: turnstileToken ? { "x-turnstile-token": turnstileToken } : {} };
+      const { error } = byEmail
+        ? await authClient.emailOtp.sendVerificationOtp({ email: email.trim(), type: "sign-in", fetchOptions })
+        : await authClient.phoneNumber.sendOtp({ phoneNumber: e164, fetchOptions });
       setTurnstileToken(null);
       setCheck((n) => n + 1);
       if (error) return setError(explain(error));
@@ -126,7 +132,9 @@ export function PhoneSignIn({
   const verify = (code: string) =>
     start(async () => {
       setError(null);
-      const { error } = await authClient.phoneNumber.verify({ phoneNumber: e164, code, ...(link && { updatePhoneNumber: true }) });
+      const { error } = byEmail
+        ? await authClient.signIn.emailOtp({ email: email.trim(), otp: code })
+        : await authClient.phoneNumber.verify({ phoneNumber: e164, code, ...(link && { updatePhoneNumber: true }) });
       if (error) return setError(explain(error));
       // Who just signed in decides the page: /after-sign-in redirects to the console or to where they were going.
       router.replace(`/after-sign-in?next=${encodeURIComponent(next)}`);
@@ -153,9 +161,7 @@ export function PhoneSignIn({
         </h1>
         <p className={`${anim(2)} ${authLead} tabular-nums`}>
           We sent a 6-digit code to{" "}
-          <span className="whitespace-nowrap">
-            +91 {phone.slice(0, 5)} {phone.slice(5)}
-          </span>
+          <span className="whitespace-nowrap">{byEmail ? email.trim() : `+91 ${phone.slice(0, 5)} ${phone.slice(5)}`}</span>
           .{" "}
           <button
             type="button"
@@ -165,7 +171,7 @@ export function PhoneSignIn({
             }}
             className={authLink}
           >
-            Change number
+            {byEmail ? "Change email" : "Change number"}
           </button>
         </p>
 
@@ -191,7 +197,7 @@ export function PhoneSignIn({
                 required
                 pattern="[0-9]{6}"
                 maxLength={6}
-                placeholder="Enter the code from the SMS"
+                placeholder={byEmail ? "Enter the code from the email" : "Enter the code from the SMS"}
                 aria-invalid={!!error}
                 aria-describedby={error ? "auth-error" : undefined}
                 onChange={(e) => e.target.value.length === 6 && !pending && verify(e.target.value)}
@@ -228,10 +234,34 @@ export function PhoneSignIn({
         {link
           ? "A confirmed mobile number is required to use Gharaana. We'll text you a 6-digit code."
           : mode === "sign-up"
-            ? "Join with your mobile number. We'll text you a 6-digit code, and that's all it takes."
+            ? byEmail
+              ? "Join with your email. We'll send you a 6-digit code, and that's all it takes."
+              : "Join with your mobile number. We'll text you a 6-digit code, and that's all it takes."
             : "Access your account and continue your journey with us"}
       </p>
       {notice && <p className={`${anim(2)} ${authNotice}`}>{notice}</p>}
+
+      {!link && (
+        // How the code arrives. Text messages show as off until MSG91 is set up (lib/sms.ts).
+        <div role="radiogroup" aria-label="Get your code by" className={`${anim(3)} grid grid-cols-2 gap-1 rounded-full bg-ink/5 p-1 text-sm font-medium`}>
+          {(["email", "phone"] as const).map((m) => {
+            const off = m === "phone" && !sms;
+            return (
+              <button
+                key={m}
+                type="button"
+                role="radio"
+                aria-checked={method === m}
+                disabled={off}
+                onClick={() => { setMethod(m); setError(null); }}
+                className={`h-9 cursor-pointer rounded-full transition ${method === m ? "bg-canvas text-ink shadow-sm" : "text-muted"} disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                {m === "email" ? "Email" : off ? "Mobile (off for now)" : "Mobile"}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <form
         className="space-y-5"
@@ -240,6 +270,30 @@ export function PhoneSignIn({
           send();
         }}
       >
+        {byEmail ? (
+          <div className={anim(3)}>
+            <label htmlFor="email" className={authLabel}>
+              Email
+            </label>
+            <div className={authField}>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                autoFocus
+                required
+                maxLength={254}
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                aria-invalid={!!error}
+                aria-describedby={error ? "auth-error" : undefined}
+                className={`${authInput} px-4`}
+              />
+            </div>
+            {errorLine}
+          </div>
+        ) : (
         <div className={anim(3)}>
           <label htmlFor="phone" className={authLabel}>
             Mobile Number
@@ -266,6 +320,7 @@ export function PhoneSignIn({
           </div>
           {errorLine}
         </div>
+        )}
         {turnstile}
         <button type="submit" disabled={pending || !turnstileToken} className={`${anim(4)} ${authPrimary}`}>
           {pending ? "Sending…" : "Send code"}

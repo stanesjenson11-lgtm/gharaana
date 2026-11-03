@@ -2,6 +2,9 @@
 // Better Auth makes and checks the code itself, so MSG91 only delivers it.
 
 export const smsConfigured = () => !!(process.env.MSG91_AUTH_KEY && process.env.MSG91_OTP_TEMPLATE_ID);
+// Text-message codes are offered once MSG91 is set up (and always in development, where codes go to the log). Until then
+// the live site signs people in by email code, and nobody is asked to confirm a mobile number (lib/staff-day.ts).
+export const smsAvailable = () => smsConfigured() || process.env.NODE_ENV !== "production";
 
 export async function sendOtpSms(phone: string, code: string) {
   const url = new URL("https://control.msg91.com/api/v5/otp");

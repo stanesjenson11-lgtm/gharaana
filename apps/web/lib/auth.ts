@@ -3,8 +3,9 @@ import { APIError } from "better-auth/api";
 import { eq } from "drizzle-orm";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { phoneNumber, twoFactor } from "better-auth/plugins";
+import { emailOTP, phoneNumber, twoFactor } from "better-auth/plugins";
 import { passkey } from "@better-auth/passkey";
+import { emailConfigured, sendOtpEmail } from "./email.ts";
 import { db } from "./db.ts";
 import { otpThrottle } from "./otp-throttle.ts";
 import { isStaffRole } from "./roles.ts";
@@ -63,6 +64,8 @@ export const auth = betterAuth({
     customRules: {
       "/phone-number/send-otp": { window: 600, max: 5 },
       "/phone-number/verify": { window: 600, max: 10 },
+      "/email-otp/send-verification-otp": { window: 600, max: 5 },
+      "/sign-in/email-otp": { window: 600, max: 10 },
       // Passkey checks cost nothing to send, so these leave room for many people behind one carrier IP.
       "/passkey/generate-authenticate-options": { window: 600, max: 60 },
       "/passkey/verify-authentication": { window: 600, max: 30 },
@@ -85,6 +88,13 @@ export const auth = betterAuth({
     "/two-factor/generate-backup-codes",
     "/two-factor/send-otp",
     "/two-factor/verify-otp",
+    // Email codes are only for signing in: there are no passwords to reset, and an address changes on Account.
+    "/email-otp/request-password-reset",
+    "/email-otp/reset-password",
+    "/email-otp/request-email-change",
+    "/email-otp/change-email",
+    "/email-otp/verify-email",
+    "/email-otp/check-verification-otp",
   ],
   plugins: [
     twoFactor({ issuer: "Gharaana", allowPasswordless: true }), // phone sign-in has no password to ask for
@@ -107,6 +117,20 @@ export const auth = betterAuth({
         // OTP_IN_LOGS=1 is for test deploys before MSG91 exists: codes go to the host's log, which only the team can read.
         if (process.env.NODE_ENV === "production" && process.env.OTP_IN_LOGS !== "1") throw new Error("SMS provider is not configured: set MSG91_AUTH_KEY and MSG91_OTP_TEMPLATE_ID");
         console.log(`[dev] OTP for ${phoneNumber}: ${code}`);
+      },
+    }),
+    // Sign in (or join) with a 6-digit code by email, sent with Resend (lib/email.ts). The other way in while text-message
+    // codes are off (lib/sms.ts). Codes are stored hashed, last 10 minutes and allow 3 tries.
+    emailOTP({
+      otpLength: 6,
+      expiresIn: 600,
+      allowedAttempts: 3,
+      storeOTP: "hashed",
+      sendVerificationOTP: async ({ email, otp }) => {
+        if (emailConfigured()) return sendOtpEmail(email, otp);
+        // As with SMS: OTP_IN_LOGS=1 is for test deploys before Resend is set up; codes go to the host's log.
+        if (process.env.NODE_ENV === "production" && process.env.OTP_IN_LOGS !== "1") throw new Error("Email provider is not configured: set RESEND_API_KEY");
+        console.log(`[dev] Email code for ${email}: ${otp}`);
       },
     }),
     // Passkeys sign an existing account in (members fully; staff still go through /after-sign-in's morning text message

@@ -6,12 +6,14 @@
 // by itself: it only lets the sign-in page ask for the authenticator code alone, which is still a second factor.
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { istDate, todayRange } from "./docket-meta.ts";
+import { smsAvailable } from "./sms.ts";
 
 export const DAY_COOKIE = "dn_staff_day";
 
-// Test servers only (SKIP_PHONE_OTP=1, never on the real one): no text-message codes. A signed-in person counts as having
-// confirmed their number, and staff skip the morning code. Staff still pass the authenticator.
-export const skipPhoneOtp = () => process.env.SKIP_PHONE_OTP === "1";
+// No text-message codes: on test servers (SKIP_PHONE_OTP=1), and on the live site until MSG91 is set up (lib/sms.ts).
+// A signed-in person then counts as having confirmed their number, and staff skip the morning code. Staff still pass
+// the authenticator.
+export const skipPhoneOtp = () => process.env.SKIP_PHONE_OTP === "1" || !smsAvailable();
 
 // ponytail: the day ends at midnight in India. A later hour (say 4 am) would suit a team that works past midnight: change it here.
 export const endOfDay = (now = new Date()) => todayRange(now)[1];

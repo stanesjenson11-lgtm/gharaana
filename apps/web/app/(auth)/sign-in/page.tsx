@@ -12,6 +12,7 @@ import { db } from "@/lib/db";
 import { isStaffRole } from "@/lib/roles";
 import { user } from "@/lib/schema";
 import { getSession, safeNext } from "@/lib/session";
+import { smsAvailable } from "@/lib/sms";
 import { DAY_COOKIE, dayUser } from "@/lib/staff-day";
 
 export const metadata: Metadata = { title: "Sign in | Gharaana", robots: { index: false } };
@@ -48,8 +49,9 @@ async function SignIn({ searchParams }: Pick<PageProps<"/sign-in">, "searchParam
       next={next}
       providers={{ google: !!process.env.GOOGLE_CLIENT_ID, apple: !!process.env.APPLE_CLIENT_ID }}
       failed={p.error === "1"}
-      notice={idle ?? (p.team === "1" ? "Team accounts sign in with a mobile number and an authenticator code. A new day starts with a text message." : undefined)}
+      notice={idle ?? (p.team === "1" ? (smsAvailable() ? "Team accounts sign in with a mobile number and an authenticator code. A new day starts with a text message." : "Team accounts sign in with a code, then their authenticator.") : undefined)}
       dev={process.env.NODE_ENV === "development"}
+      sms={smsAvailable()}
     />
   );
 }

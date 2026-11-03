@@ -9,8 +9,8 @@ export const GET = handler.GET;
 export const POST = async (req: Request) => {
   const url = new URL(req.url);
 
-  // Cloudflare Turnstile bot defense: verify token before issuing SMS OTP codes
-  if (url.pathname.endsWith("/phone-number/send-otp")) {
+  // Cloudflare Turnstile bot defense: verify token before sending a code by SMS or email (passes while switched off)
+  if (url.pathname.endsWith("/phone-number/send-otp") || url.pathname.endsWith("/email-otp/send-verification-otp")) {
     const token = req.headers.get("x-turnstile-token");
     const ip = req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for");
     const check = await verifyTurnstileToken(token, ip);
