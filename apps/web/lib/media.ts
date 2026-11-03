@@ -1,14 +1,46 @@
 // Uploaded photos and ownership proofs. Server only.
 import { randomUUID } from "node:crypto";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import sharp from "sharp";
 
-// ponytail: local disk serves dev and the single VPS. Cloudflare R2 replaces it when the client's account exists;
-// keys and URLs stay the same. Outside the repo so the dev watcher never sees writes.
+// Where the files live. On Vercel: one private Vercel Blob store (connected to the project, so BLOB_STORE_ID and OIDC,
+// or BLOB_READ_WRITE_TOKEN), because a function's disk is wiped and not shared. Without a store (dev, tests, a single
+// VPS): local disk, outside the repo so the dev watcher never sees writes. Both use the same paths, "public/<key>-<w>.webp"
+// and "private/<key>.<ext>", so keys and URLs (/media/..., the admin proof route) never change.
 export const MEDIA_DIR =
   process.env.MEDIA_DIR ?? join(process.env.LOCALAPPDATA ?? join(homedir(), ".local", "share"), "directnest", "media");
+const blobStore = () => !!(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
+
+async function store(path: string, body: Buffer, contentType: string) {
+  if (blobStore()) {
+    const { put } = await import("@vercel/blob");
+    await put(path, body, { access: "private", contentType, addRandomSuffix: false });
+    return;
+  }
+  await mkdir(dirname(join(MEDIA_DIR, path)), { recursive: true });
+  await writeFile(join(MEDIA_DIR, path), body);
+}
+
+/** A stored file's bytes as a stream (Blob) or buffer (disk), or null when it isn't there. Callers decide who may see it. */
+export async function readMedia(path: string): Promise<ReadableStream<Uint8Array> | Buffer | null> {
+  if (blobStore()) {
+    const { get } = await import("@vercel/blob");
+    const res = await get(path, { access: "private" });
+    return res?.statusCode === 200 ? res.stream : null;
+  }
+  return readFile(join(MEDIA_DIR, path)).catch(() => null);
+}
+
+async function remove(path: string) {
+  if (blobStore()) {
+    const { del } = await import("@vercel/blob");
+    await del(path).catch(() => {});
+    return;
+  }
+  await unlink(join(MEDIA_DIR, path)).catch(() => {});
+}
 export const WIDTHS = [480, 960, 1600] as const;
 const MAX_PHOTO = 15 * 1024 * 1024;
 const MAX_PROOF = 10 * 1024 * 1024;
@@ -30,11 +62,11 @@ export async function savePhoto(input: Buffer) {
   if (width < 600) throw new MediaError("That photo is too small. Use one at least 600 pixels wide.");
 
   const key = randomUUID();
-  const dir = join(MEDIA_DIR, "public");
-  await mkdir(dir, { recursive: true });
   // sharp drops metadata on output unless asked to keep it, so nothing from the camera survives.
   await Promise.all(
-    WIDTHS.map((w) => img.clone().resize({ width: w, withoutEnlargement: true }).webp({ quality: 78 }).toFile(join(dir, `${key}-${w}.webp`))),
+    WIDTHS.map(async (w) =>
+      store(`public/${key}-${w}.webp`, await img.clone().resize({ width: w, withoutEnlargement: true }).webp({ quality: 78 }).toBuffer(), "image/webp"),
+    ),
   );
   return { key, dhash: await dHash(input) };
 }
@@ -53,8 +85,7 @@ export async function saveProof(input: Buffer) {
   }
   const key = randomUUID();
   const ext = isPdf ? "pdf" : "jpg";
-  await mkdir(join(MEDIA_DIR, "private"), { recursive: true });
-  await writeFile(join(MEDIA_DIR, "private", `${key}.${ext}`), out);
+  await store(`private/${key}.${ext}`, out, isPdf ? "application/pdf" : "image/jpeg");
   return { key, ext };
 }
 
@@ -78,9 +109,6 @@ export const SAME_PHOTO = 6;
 
 /** Deletes an uploaded photo or proof document from storage. */
 export async function deleteMediaFile(key: string, kind: "photo" | "proof", ext = "jpg") {
-  if (kind === "photo") {
-    await Promise.all(WIDTHS.map((w) => unlink(join(MEDIA_DIR, "public", `${key}-${w}.webp`)).catch(() => {})));
-  } else {
-    await unlink(join(MEDIA_DIR, "private", `${key}.${ext}`)).catch(() => {});
-  }
+  if (kind === "photo") await Promise.all(WIDTHS.map((w) => remove(`public/${key}-${w}.webp`)));
+  else await remove(`private/${key}.${ext}`);
 }
