@@ -96,15 +96,16 @@ function useSignedIn() {
   return signedIn;
 }
 
-export function Nav({ tone, onBook, onHome }: { tone: Tone; onBook: () => void; onHome: () => void }) {
+export function Nav({ tone, onBook }: { tone: Tone; onBook: () => void }) {
   const session = useSignedIn();
   return (
     <header className="nav" data-tone={tone}>
-      <a href="#top" className="nav__logo" aria-label="Gharaana, back to the start" onClick={(e) => { e.preventDefault(); onHome(); }}>
-        {/* a cached SVG file, not inline paths: keeps 22 KB of path data out of the HTML and this script */}
+      {/* "#top" is the browser's own jump to the top of the page */}
+      <a href="#top" className="nav__logo" aria-label="Gharaana, back to the start">
+        {/* a cached SVG file, not inline paths: keeps 22 KB of path data out of the HTML and this script. The brand mark
+            in its colours, the wordmark in white, on a soft navy pool (tour.css) so it reads over every scene. */}
         {/* eslint-disable-next-line @next/next/no-img-element -- a static vector logo; next/image has nothing to optimise */}
-        <img src={tone === "paper" ? `/brand/logo-on-dark.svg${LOGO_V}` : `/brand/logo-color.svg${LOGO_V}`}
-          alt="Gharaana" width={4784} height={1013} className="nav__mark" />
+        <img src={`/brand/logo-on-dark.svg${LOGO_V}`} alt="Gharaana" width={4784} height={1013} className="nav__mark" />
       </a>
       <div className="nav__actions">
         <button type="button" className="btn btn--sun btn--sm" data-magnet onClick={onBook}>Book a viewing</button>

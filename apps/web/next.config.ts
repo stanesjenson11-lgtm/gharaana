@@ -31,6 +31,8 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https:",
+      // the home film plays from an in-memory copy (components/tour/Tour.tsx)
+      "media-src 'self' blob:",
       "connect-src 'self' https://challenges.cloudflare.com https://tiles.openfreemap.org https://*.openfreemap.org https://*.tiles.mapbox.com https://api.msg91.com ws: wss:",
       "frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com",
       "worker-src 'self' blob:",

@@ -173,7 +173,7 @@ export function SiteHeader({ member, rentals = false }: { member?: Member | null
       </header>
 
       <dialog ref={sheet} id="site-menu" aria-label="Menu" className="sheet" onClick={(e) => e.target === sheet.current && sheet.current?.close()}>
-        <div data-lenis-prevent className="mx-auto flex h-full max-w-xl flex-col overflow-y-auto px-5 pb-10">
+        <div className="mx-auto flex h-full max-w-xl flex-col overflow-y-auto px-5 pb-10">
           <div className="flex h-16 shrink-0 items-center justify-between">
             <Logo className="block h-8 w-auto" />
             <button type="button" onClick={() => sheet.current?.close()} className="-mr-2 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full hover:bg-surface">

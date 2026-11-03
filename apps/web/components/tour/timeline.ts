@@ -8,7 +8,7 @@ type Vars = gsap.TweenVars;
 export type TourHooks = {
   reduced: boolean;
   onTone: (t: Tone) => void;
-  onTick: (tick: number) => void; // drives the 3D camera
+  onTick: (tick: number) => void; // drives the film (or the 3D camera)
 };
 
 const FADE = new Set(["opacity", "autoAlpha"]);
@@ -17,20 +17,24 @@ const FADE = new Set(["opacity", "autoAlpha"]);
 export function buildTour(root: HTMLElement, o: TourHooks) {
   gsap.registerPlugin(ScrollTrigger);
   const q = gsap.utils.selector(root);
+  let tone: Tone = "ink";
 
+  // The scroll stays native (the browser's own thread, its own momentum). The scene, film and captions together, plays
+  // a single playhead that glides after it for half a second, so every layer moves as one and eases to a stop however
+  // the scroll ends: a wheel notch, a trackpad flick, a key press.
   const tl = gsap.timeline({
     defaults: { ease: "none" },
+    onUpdate(this: gsap.core.Timeline) {
+      const tick = this.time(); // the timeline runs in ticks (0 to TOTAL)
+      o.onTick(tick);
+      track(tick);
+    },
     scrollTrigger: {
       trigger: root,
       start: "top top",
       end: "bottom bottom",
-      scrub: true, // Lenis already smooths the scroll; a second smoothing here only added lag
+      scrub: o.reduced ? true : 0.5,
       invalidateOnRefresh: true,
-      onUpdate: (self) => {
-        const tick = self.progress * TOTAL;
-        o.onTick(tick);
-        track(tick);
-      },
     },
   });
 
@@ -54,7 +58,6 @@ export function buildTour(root: HTMLElement, o: TourHooks) {
     if (Object.keys(t.rest).length) tl.set(target, t.rest, at + dur);
   }
 
-  let tone: Tone = "ink";
   function track(tick: number) {
     const nt = [...TONE_BREAKS].reverse().find(([at]) => tick >= at)![1];
     if (nt !== tone) o.onTone((tone = nt));

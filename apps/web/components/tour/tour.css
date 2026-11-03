@@ -25,11 +25,6 @@
 .gharaana :is(input, button) { caret-color: var(--blue); accent-color: var(--blue); }
 .gharaana :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 5px var(--sun); }
 
-/* Lenis owns scroll while it runs. */
-html.lenis, html.lenis body { height: auto; }
-.lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
-.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
-
 /* ============ Stage ============ */
 .tour { position: relative; height: 700svh; }
 .stage {
@@ -43,8 +38,10 @@ html.lenis, html.lenis body { height: auto; }
 .sc-close { visibility: hidden; z-index: 4; }
 
 /* The 3D world: one canvas, one camera. */
-.world { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; opacity: 0; transition: opacity 1.4s var(--ease-out); background: #e8e6e2; }
-.stage[data-world="ready"] .world { opacity: 1; }
+.world { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; opacity: 0; transition: opacity 0.6s var(--ease-out); background: #e8e6e2; }
+.stage[data-world="ready"] canvas.world, video.world[data-on] { opacity: 1; }
+/* the sharp film takes over from the quick one on the same frame: at once, so nothing ghosts mid-scroll */
+.world--sharp { transition: none; }
 /* Frame 0 of the film, shown from the first paint (the page's largest image); the film fades in over it once loaded. */
 .poster { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; }
 
@@ -83,14 +80,22 @@ html.lenis, html.lenis body { height: auto; }
   padding: 0 var(--gutter) clamp(2rem, 9cqh, 5.5rem);
   display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
   pointer-events: none; z-index: 3;
+  /* the timeline moves and fades it on every scroll frame: its own layer from the start, so the big blurred title is
+     drawn once, not again on the first scroll (a visible hitch in Safari) */
+  will-change: transform, opacity;
 }
 /* A graduated sky filter in the brand navy: the hazy sky behind "Step inside" measures 2.6:1 against white on its
-   own (1.6:1 at its brightest); this brings it past 3:1. It belongs to the hero, so the sky lifts as the film starts. */
+   own (1.6:1 at its brightest); this brings it past 3:1. It belongs to the hero, so the sky lifts as the film starts.
+   The tower stays out of it: below the roof (frame y 391) the filter clears across the tower's column (x 828–1092),
+   reaching full strength again just before the title's two halves begin (±161 from the centre). */
 .hero::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(180deg,
     color-mix(in oklab, var(--ink) 54%, transparent) 0%, color-mix(in oklab, var(--ink) 50%, transparent) 34%,
     color-mix(in oklab, var(--ink) 15%, transparent) 52%, transparent 66%);
+  mask:
+    linear-gradient(#000 calc(50% - 185 * var(--k)), transparent calc(50% - 138 * var(--k))),
+    linear-gradient(90deg, #000 calc(50% - 158 * var(--k)), transparent calc(50% - 128 * var(--k)) calc(50% + 128 * var(--k)), #000 calc(50% + 158 * var(--k)));
 }
 .hero__title {
   /* as big as the half beside the tower allows ("your next" is about 4.4em wide) */
@@ -178,7 +183,13 @@ html.lenis, html.lenis body { height: auto; }
   pointer-events: none;
 }
 .nav > * { pointer-events: auto; }
-.nav__mark { display: block; height: clamp(2rem, 4.4cqh, 2.7rem); width: auto; }
+.nav__logo { display: block; }
+/* The white wordmark carries the title's own navy shadow, hugging the letters, so it reads over the bright scenes (the
+   living room, the roof) as well as the hero's filtered sky. */
+.nav__mark {
+  display: block; height: clamp(2rem, 4.4cqh, 2.7rem); width: auto;
+  filter: drop-shadow(0 1px 1.5px color-mix(in oklab, var(--ink) 50%, transparent)) drop-shadow(0 2px 10px color-mix(in oklab, var(--ink) 55%, transparent));
+}
 .nav__actions { display: flex; align-items: center; gap: 0.5rem; }
 
 .caps {
