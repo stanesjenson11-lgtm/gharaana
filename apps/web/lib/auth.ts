@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { phoneNumber, twoFactor } from "better-auth/plugins";
+import { passkey } from "@better-auth/passkey";
 import { db } from "./db.ts";
 import { otpThrottle } from "./otp-throttle.ts";
 import { isStaffRole } from "./roles.ts";
@@ -13,6 +14,10 @@ import { DAY_COOKIE, dayToken, skipPhoneOtp } from "./staff-day.ts";
 import { dayCookieOptions, staffDay } from "./staff-day-plugin.ts";
 
 const INDIAN_MOBILE = /^\+91[6-9]\d{9}$/;
+
+// Passkeys belong to one web address: the one in BETTER_AUTH_URL (localhost in development). A passkey made on the
+// uat site does not work on the live one, and the other way round.
+const SITE = new URL(process.env.BETTER_AUTH_URL ?? "http://localhost:3000");
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema }),
@@ -58,6 +63,11 @@ export const auth = betterAuth({
     customRules: {
       "/phone-number/send-otp": { window: 600, max: 5 },
       "/phone-number/verify": { window: 600, max: 10 },
+      // Passkey checks cost nothing to send, so these leave room for many people behind one carrier IP.
+      "/passkey/generate-authenticate-options": { window: 600, max: 60 },
+      "/passkey/verify-authentication": { window: 600, max: 30 },
+      "/passkey/generate-register-options": { window: 600, max: 10 },
+      "/passkey/verify-registration": { window: 600, max: 10 },
     },
   },
   // Behind Cloudflare and Caddy the socket IP is the proxy's; without this every visitor would share one limit.
@@ -99,6 +109,11 @@ export const auth = betterAuth({
         console.log(`[dev] OTP for ${phoneNumber}: ${code}`);
       },
     }),
+    // Passkeys sign an existing account in (members fully; staff still go through /after-sign-in's morning text message
+    // and the console's authenticator code, which apply to every sign-in). Adding one needs a fresh signed-in session,
+    // so a passkey never creates an account or skips confirming a mobile number. Every passkey sign-in still passes the
+    // ban check in databaseHooks above.
+    passkey({ rpID: SITE.hostname, rpName: "Gharaana", origin: SITE.origin, registration: { requireSession: true } }),
     nextCookies(), // keep last: lets server actions set the session cookie
   ],
 });

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { DeleteAccountButton } from "@/components/auth/delete-account-button";
+import { Passkeys } from "@/components/auth/passkeys";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { ListingTile } from "@/components/search/listing-tile";
 import { daysAgo, inr, inrShort, phone as formatPhone } from "@/lib/format";
@@ -293,6 +294,8 @@ async function Account() {
           </ul>
         </section>
       )}
+
+      <Passkeys />
 
       <section aria-labelledby="privacy" className="mt-16 border-t border-hairline pt-8">
         <h2 id="privacy" className="text-[15px] font-semibold text-muted">

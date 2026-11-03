@@ -29,6 +29,12 @@ const GoogleIcon = () => (
     <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l6.19 5.238C42.022 35.026 44 30.038 44 24c0-2.641-.21-5.236-.611-7.743z" />
   </svg>
 );
+const KeyMark = () => (
+  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="8" cy="15" r="4" />
+    <path d="m10.85 12.15 8.65-8.65M17 6l2.5 2.5M14.5 8.5l2 2" />
+  </svg>
+);
 const AppleMark = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
     <path d="M16.37 12.63c-.03-2.4 1.96-3.56 2.05-3.62-1.12-1.63-2.86-1.86-3.48-1.88-1.48-.15-2.89.87-3.64.87-.75 0-1.91-.85-3.14-.83-1.62.02-3.11.94-3.94 2.39-1.68 2.92-.43 7.24 1.21 9.6.8 1.16 1.76 2.45 3.01 2.4 1.21-.05 1.67-.78 3.13-.78 1.46 0 1.87.78 3.15.75 1.3-.02 2.12-1.17 2.91-2.34.92-1.34 1.3-2.64 1.32-2.7-.03-.01-2.53-.97-2.58-3.86ZM14 5.5c.66-.8 1.11-1.92.99-3.03-.95.04-2.1.64-2.78 1.43-.61.7-1.14 1.84-1 2.93 1.06.08 2.14-.54 2.79-1.33Z" />
@@ -71,6 +77,22 @@ export function PhoneSignIn({
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
+
+  // A passkey (Face ID, fingerprint, device PIN) signs in an account that added one under Account. /after-sign-in then
+  // decides the door exactly as for a text-message sign-in.
+  const goPasskey = async () => {
+    setError(null);
+    setSigningIn("passkey");
+    const { error } = await authClient.signIn.passkey();
+    if (error) {
+      setSigningIn(null);
+      // Closing the browser's passkey sheet is a choice, not an error.
+      if (("code" in error && error.code === "AUTH_CANCELLED") || /cancel|abort|not allowed/i.test(error.message ?? "")) return;
+      // 403 is the account itself (suspended, lib/auth.ts), so say what the server said
+      return setError(error.status === 403 && error.message ? error.message : "That passkey didn't work here. Sign in with your mobile number, then add a passkey under Account.");
+    }
+    router.replace(`/after-sign-in?next=${encodeURIComponent(next)}`);
+  };
 
   const goSocial = (provider: "google" | "apple") => {
     setError(null);
@@ -264,6 +286,12 @@ export function PhoneSignIn({
             <button type="button" disabled={!!signingIn} onClick={() => goSocial("apple")} className={`${anim(7)} ${authOutline}`}>
               <AppleMark />
               {signingIn === "apple" ? "Opening Apple…" : "Continue with Apple"}
+            </button>
+          )}
+          {mode === "sign-in" && (
+            <button type="button" disabled={!!signingIn} onClick={goPasskey} className={`${anim(7)} ${authOutline}`}>
+              <KeyMark />
+              {signingIn === "passkey" ? "Waiting for your passkey…" : "Sign in with a passkey"}
             </button>
           )}
         </>

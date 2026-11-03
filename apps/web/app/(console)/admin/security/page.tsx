@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { Passkeys } from "@/components/auth/passkeys";
 import { anim, authLead, authTitle, authTitleText } from "@/components/auth/ui";
 import { requireAdminRole } from "@/lib/session";
 import { Enroll } from "./enroll";
@@ -23,6 +24,8 @@ async function Security() {
       <p className="mt-1 text-muted">
         Your authenticator app is on. If you lose the phone and your backup codes, someone with server access resets it with <code>pnpm reset-admin-2fa</code>.
       </p>
+      {/* A passkey replaces only the sign-in itself: each day still starts with a text message, and the console still asks for the authenticator. */}
+      <Passkeys />
     </main>
   ) : (
     // Part of signing in for the first time, so it looks like the sign-in screens.

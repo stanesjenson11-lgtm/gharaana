@@ -44,6 +44,28 @@ export const twoFactor = pgTable(
   (table) => [index("two_factor_userId_idx").on(table.userId)],
 );
 
+// Passkeys (Face ID, fingerprint, device PIN, security keys): another way for an existing account to sign in, made by
+// better-auth's passkey plugin (lib/auth.ts). Only a signed-in person can add one, so it never creates an account.
+export const passkey = pgTable(
+  "passkey",
+  {
+    id: text("id").primaryKey(),
+    name: text("name"),
+    publicKey: text("public_key").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    credentialID: text("credential_id").notNull(),
+    counter: integer("counter").notNull(),
+    deviceType: text("device_type").notNull(),
+    backedUp: boolean("backed_up").notNull(),
+    transports: text("transports"),
+    createdAt: timestamp("created_at"),
+    aaguid: text("aaguid"),
+  },
+  (table) => [index("passkey_userId_idx").on(table.userId), index("passkey_credentialID_idx").on(table.credentialID)],
+);
+
 export const session = pgTable(
   "session",
   {
