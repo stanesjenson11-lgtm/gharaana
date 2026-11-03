@@ -127,10 +127,12 @@ export const auth = betterAuth({
       allowedAttempts: 3,
       storeOTP: "hashed",
       sendVerificationOTP: async ({ email, otp }) => {
+        // As with SMS: OTP_IN_LOGS=1 is for test deploys before a Resend domain is verified; codes also go to the host's
+        // log, since Resend's shared sender only delivers to the Resend account's own address.
+        const inLogs = process.env.NODE_ENV !== "production" || process.env.OTP_IN_LOGS === "1";
+        if (inLogs) console.log(`[dev] Email code for ${email}: ${otp}`);
         if (emailConfigured()) return sendOtpEmail(email, otp);
-        // As with SMS: OTP_IN_LOGS=1 is for test deploys before Resend is set up; codes go to the host's log.
-        if (process.env.NODE_ENV === "production" && process.env.OTP_IN_LOGS !== "1") throw new Error("Email provider is not configured: set RESEND_API_KEY");
-        console.log(`[dev] Email code for ${email}: ${otp}`);
+        if (!inLogs) throw new Error("Email provider is not configured: set RESEND_API_KEY");
       },
     }),
     // Passkeys sign an existing account in (members fully; staff still go through /after-sign-in's morning text message
