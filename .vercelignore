@@ -1,5 +1,11 @@
-# The Vercel CLI uploads local files (it doesn't read .gitignore). The site needs none of these:
-ai-renders/
-.chrome-profile/
-.impeccable/
-.claude/
+.env*
+!.env.example
+.claude
+.agents
+.impeccable
+graphify-out
+skills-lock.json
+**/node_modules
+**/.next
+ai-renders
+.chrome-profile

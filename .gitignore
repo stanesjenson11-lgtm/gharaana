@@ -1,53 +1,21 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
+node_modules/
 .env*
+!.env.example
+ai.md
 
-# vercel
+# Claude, Graphify & Agent files
+.claude/
+CLAUDE.md
+.agents/
+graphify-out/
+.graphify*
+.impeccable/
 .vercel
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-.vercel
-.env*
-
-# headless Chrome profile used by ai-renders scripts (asset cache)
+# hero tooling (ai-renders/): the headless Chrome profile and caches it makes; renders live outside the repo
 .chrome-profile/
 ai-renders/shots/
 ai-renders/.asset-cache/
-
-# the scroll-scrub site videos (public/tour-1080.mp4, tour-720.mp4, ~30 MB, made by python ai-renders/oneshot.py)
-# are committed so a Git deploy has them
 __pycache__/
+.next/
+

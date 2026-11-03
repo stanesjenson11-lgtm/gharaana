@@ -1,31 +1,19 @@
 {
-  "name": "gharaana",
-  "version": "0.1.0",
+  "name": "directnest",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@gsap/react": "^2.1.2",
-    "gsap": "^3.15.0",
-    "lenis": "^1.3.27",
-    "next": "16.4.2",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "three": "^0.186.1"
-  },
-  "devDependencies": {
-    "@tailwindcss/turbopack": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@types/three": "^0.186.0",
-    "eslint": "^9",
-    "eslint-config-next": "16.4.2",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "lint": "pnpm --filter web lint",
+    "test": "pnpm --filter web test",
+    "db:start": "pnpm --filter web db:start",
+    "db:stop": "pnpm --filter web db:stop",
+    "db:generate": "pnpm --filter web db:generate",
+    "db:migrate": "pnpm --filter web db:migrate",
+    "db:seed": "pnpm --filter web db:seed",
+    "make-admin": "pnpm --filter web make-admin",
+    "reset-admin-2fa": "pnpm --filter web reset-admin-2fa",
+    "apple-secret": "pnpm --filter web apple-secret",
+    "maintenance": "pnpm --filter web maintenance"
   }
 }

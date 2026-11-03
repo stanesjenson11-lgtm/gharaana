@@ -1,0 +1,283 @@
+@import "tailwindcss";
+
+/* Gharaana brand kit (July 2024): white, #FFDA1A yellow, #1560BD blue, #001238 navy; the rest are oklab mixes of
+   those four, the same ones the home page tour uses (components/tour/tour.css). The old names stay so no screen changes:
+   indigo = brand blue, dusk = night navy, streetlight = brand yellow, moonlight = sky. */
+@theme {
+  --color-dusk: #011c49; /* blue 14% into navy */
+  --color-dusk-deep: #001238; /* navy */
+  --color-moonlight: #eff4fb; /* blue 7% into white */
+  --color-moonlight-dim: #d5e3f5; /* blue 18% into white */
+  --color-indigo: #1560bd;
+  --color-indigo-deep: #094087; /* blue 62% into navy */
+  --color-streetlight: #ffda1a;
+  --color-canvas: #ffffff;
+  --color-surface: #eff4fb;
+  --color-hairline: #dee9f7; /* blue 14% into white */
+  --color-ink: #001238;
+  --color-muted: #586984; /* navy 60% into white: 5:1 on surface */
+  --color-verified: oklch(0.5 0.12 155);
+  --color-verified-wash: oklch(0.95 0.04 155);
+  --color-danger: oklch(0.52 0.19 27);
+
+  --font-sans: var(--font-anek), system-ui, sans-serif;
+
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@utility t-headline {
+  font-size: clamp(1.875rem, 3.6vw, 2.875rem);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  font-weight: 500;
+  font-variation-settings: "wdth" 108;
+  text-wrap: balance;
+}
+
+@utility t-wide {
+  font-variation-settings: "wdth" 116;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-indigo);
+    outline-offset: 2px;
+  }
+}
+
+/* ---------- Search filter popovers (native popover + CSS anchor positioning) ---------- */
+
+.filter-pop {
+  inset: auto;
+  margin: 8px 0 0;
+  position-area: bottom span-right;
+  position-try-fallbacks: flip-inline;
+  min-width: 220px;
+  padding: 8px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 14px;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  box-shadow: 0 16px 40px -16px oklch(0.22 0.025 266 / 0.35);
+  opacity: 0;
+  translate: 0 -4px;
+  transition:
+    opacity 150ms var(--ease-out-quint),
+    translate 150ms var(--ease-out-quint),
+    display 150ms allow-discrete,
+    overlay 150ms allow-discrete;
+}
+
+.filter-pop:popover-open {
+  opacity: 1;
+  translate: 0 0;
+}
+
+@starting-style {
+  .filter-pop:popover-open {
+    opacity: 0;
+    translate: 0 -4px;
+  }
+}
+
+/* Browsers without anchor positioning get the panel pinned under the filter bar. */
+@supports not (position-area: bottom) {
+  .filter-pop {
+    inset: 132px auto auto 16px;
+    margin: 0;
+  }
+}
+
+/* Map pins collapse to dots when zoomed out (map-view.tsx toggles .map-far). The active pin keeps its price. */
+.map-far .map-pin:not([data-on="true"]) {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  font-size: 0;
+  border: 2px solid var(--color-canvas);
+  background: var(--color-indigo);
+}
+
+/* ---------- Navigation: account and inbox menus, phone sheet ---------- */
+
+/* The menus are native popovers anchored to their buttons, like the filter panels. */
+.menu-pop {
+  inset: auto;
+  margin: 8px 0 0;
+  position-area: bottom span-left;
+  position-try-fallbacks: flip-inline;
+  width: min(18rem, calc(100vw - 1.5rem));
+  padding: 6px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  box-shadow: 0 16px 40px -16px oklch(0.22 0.025 266 / 0.35);
+}
+
+.menu-pop-wide {
+  width: min(24rem, calc(100vw - 1.5rem));
+}
+
+@supports not (position-area: bottom) {
+  .menu-pop {
+    inset: 72px 12px auto auto;
+    margin: 0;
+  }
+}
+
+/* The phone menu: a native modal dialog, so the page behind is inert, Escape closes it and focus comes back. */
+.sheet {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+/* The console's search box, a native modal dialog sitting near the top like Church's command palette. */
+.palette {
+  margin: max(4.5rem, 12dvh) auto auto;
+  width: min(36rem, calc(100vw - 1.5rem));
+  max-width: none;
+  padding: 0;
+  border: 1px solid var(--color-hairline);
+  border-radius: 22px;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  box-shadow: 0 24px 64px -24px oklch(0.22 0.025 266 / 0.45);
+  overflow: hidden;
+}
+
+.palette::backdrop {
+  background: oklch(0.22 0.025 266 / 0.3);
+}
+
+html:has(.sheet[open]),
+html:has(.palette[open]) {
+  overflow: hidden;
+}
+
+/* ---------- Sign-in screens ----------
+   The entrance from the sign-in design the team chose: each part fades up out of a slight blur, in order
+   (.animate-delay-*), the photo slides in, and the cards rise last. Reduced motion shows everything at once, in place. */
+
+@keyframes fadeSlideIn {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideRightIn {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes testimonialIn {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-element {
+  animation: fadeSlideIn 0.6s ease-out forwards;
+  opacity: 0;
+  filter: blur(4px);
+  transform: translateY(10px);
+}
+
+.animate-slide-right {
+  animation: slideRightIn 0.6s ease-out forwards;
+  opacity: 0;
+  filter: blur(4px);
+  transform: translateX(30px);
+}
+
+.animate-testimonial {
+  animation: testimonialIn 0.6s ease-out forwards;
+  opacity: 0;
+  filter: blur(4px);
+  transform: translateY(20px) scale(0.95);
+}
+
+.animate-delay-100 {
+  animation-delay: 0.1s;
+}
+.animate-delay-200 {
+  animation-delay: 0.2s;
+}
+.animate-delay-300 {
+  animation-delay: 0.3s;
+}
+.animate-delay-400 {
+  animation-delay: 0.4s;
+}
+.animate-delay-500 {
+  animation-delay: 0.5s;
+}
+.animate-delay-600 {
+  animation-delay: 0.6s;
+}
+.animate-delay-700 {
+  animation-delay: 0.7s;
+}
+.animate-delay-800 {
+  animation-delay: 0.8s;
+}
+.animate-delay-900 {
+  animation-delay: 0.9s;
+}
+.animate-delay-1000 {
+  animation-delay: 1s;
+}
+.animate-delay-1100 {
+  animation-delay: 1.1s;
+}
+.animate-delay-1200 {
+  animation-delay: 1.2s;
+}
+.animate-delay-1300 {
+  animation-delay: 1.3s;
+}
+.animate-delay-1400 {
+  animation-delay: 1.4s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-element,
+  .animate-slide-right,
+  .animate-testimonial {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}

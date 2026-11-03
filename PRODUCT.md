@@ -1,62 +1,51 @@
 # Product
 
-<!-- impeccable:product-schema 1 -->
+## Register
 
-## Platform
+product
 
-web
-
-## Stack
-
-Next.js (App Router) + TypeScript + Tailwind, with GSAP (ScrollTrigger) and Lenis for scroll-driven motion. Chosen by the user from the options offered. Deploy target not decided.
+The default register is product, because search, listings, posting and dashboards are the core of the product. The homepage and the city/locality pages override this to **brand**.
 
 ## Users
 
-Premium home buyers and property investors browsing a realtor site, usually on a desktop or laptop first and a phone second, deciding whether Gharaana is a brokerage worth contacting. Confirmed by the user (audience: "Premium buyers & investors").
+- **Tenants and buyers, 22–45, in Tier-1 and Tier-2 Indian cities** (Bengaluru, Mumbai, Delhi-NCR, Hyderabad, Pune, Chennai). Often new to the city for work. They search on a mid-range Android, frequently on the move and on 4G. They are anxious about a deposit of one to six months' rent and tired of paying a month's rent to brokers. Their job: find a real home from a real owner, see the full monthly cost up front, and contact the owner without their own number being sold.
+- **Independent owners and NRIs.** They want verified tenants, no broker calls, and a listing that takes minutes to post from a phone camera.
+- **Admin team.** Approves every listing before it goes live and reviews ownership proof and fraud signals.
 
 ## Product Purpose
 
-Gharaana is a real-estate brokerage. The website's job is to earn enquiries and property searches. This first surface is the hero: a scroll-driven journey that moves from the skyline, to a full view of a building, inside the building, and out across the neighbourhood, ending at a search and enquiry action.
+DirectNest is a zero-brokerage marketplace where owners and tenants deal directly. Every listing is approved by a person, every owner is checked against an ownership document, and stale listings expire on their own. Revenue comes from paid plans that reveal an owner's number, with daily limits. The tenant's number is never shown to the owner.
 
-## Positioning
+Success means:
+- A tenant finds and contacts a real owner within one session.
+- Owners stop getting broker calls.
+- No listing is older than 30 days without the owner confirming it.
 
-Undecided by the user. The brand name means household or family. The logo is a stack of wavy contour lines forming three towers. Do not invent a market, city, or claim to differentiate beyond these two facts.
+## Brand Personality
 
-## Operating Context
+**Calm, trusted, premium.** The voice is plain and exact about money: rent, maintenance and deposit are always spelled out. Indian real-estate vocabulary is used naturally (BHK, carpet area, society maintenance, Vastu facing), with no jargon walls. The brand has one quiet joke, the owner's own phrase "Brokers please excuse." Beyond that it stays composed. Emotional goals are relief, then confidence.
 
-Static marketing surface for now. No listings data, CRM, or search backend exists. Any search field is presentational until the user connects a data source.
+## Anti-references
 
-## Capabilities and Constraints
+- **NoBroker:** cluttered card-in-card stacks, upsell popups, aggressive callbacks.
+- **99acres / MagicBricks:** red-and-yellow classified portals.
+- Fake urgency: countdown timers, "12 people viewing this", chatbots that won't let go.
+- The cream-and-terracotta "AI-made" look: warm beige background, serif display, clay accent.
+- Generic SaaS landing kits: identical icon-card grids, gradient text, an eyebrow label above every section.
 
-- Hero surface only; supporting sections are not requested.
-- City, country, and listing inventory are not specified. Copy stays market-neutral.
-- Adobe Fonts load only through an Adobe web project kit that the user must create. The build ships kit-ready with free look-alike faces and a single place to paste the kit ID.
+## Design Principles
 
-## Brand Commitments
-
-Source: `C:\Users\stane\Downloads\Gharaana - brand kit.pdf` (July 2024).
-
-- Name: Gharaana.
-- Logo: wavy contour-line towers over a baseline, with the two lowest lines in yellow in the colour version; wordmark "Gharaana" in a geometric sans. Variants: portrait, landscape, monochrome (navy or white).
-- Primary palette: white #FFFFFF, yellow #FFDA1A, blue #1560BD. Wordmark and body text in a deep navy.
-- The wavy tower contour is also used cropped at the corner of collateral (letterhead, cards). Rounded corners on cards.
-- The brand kit states collateral designs are for representation only.
-
-## Evidence on Hand
-
-- Brand kit PDF (logo as raster pages only; no SVG or source file supplied).
-- Reference reel `C:\Users\stane\Downloads\Video-11527.mp4`: a scroll journey from clouds, to aerial, to a tower, to floor plans, then an isometric illustrated logistics world.
-- No Gharaana photography, renders, listings, testimonials, prices, or numbers. None may be fabricated as fact.
-- The tour is an illustrative real-time 3D model (three.js) dressed with CC0 Poly Haven textures and furniture, hotlinked from dl.polyhaven.org; self-host before launch. The footer labels it as illustrative.
-- User direction (confirmed in session): realistic renders over illustration; one continuous building, apartment, plan and neighbourhood; the tour ends back on the opening view in the same morning light (changed from a golden-hour ending, Nov 2026), with no night or outdoor lights. Interior shots follow the colour grade of the photoreal living-room entry.
-
-## Product Principles
-
-- Show the home as a place you enter, not a catalogue card.
-- Motion is the story: each scene should move the visitor closer to a home.
-- Claims stay unwritten until the user supplies real ones; illustrative material is labelled as such.
-- The brand's contour-line tower is the one recurring graphic device.
+1. **Show the whole cost.** Rent + maintenance as one monthly number, deposit beside it, and no surprises later.
+2. **Trust is earned visibly.** Verification, freshness ("owner confirmed 2 days ago") and human approval are shown, not just claimed.
+3. **Never waste a tenant's phone number.** Every flow assumes the user's contact details are precious.
+4. **Fast on a ₹12,000 phone over 4G.** Delight loads after the content and never gates it.
+5. **One memorable moment per page.** The homepage gets the story; working screens stay quiet and quick.
 
 ## Accessibility & Inclusion
 
-Not specified. Default to WCAG AA contrast, keyboard-reachable actions, and a reduced-motion path that keeps all content readable without the scroll animation.
+- WCAG 2.2 AA throughout.
+- Every animation has a `prefers-reduced-motion` alternative.
+- Works at 360 px wide.
+- Touch targets are at least 44 px.
+- Fonts are chosen with Indic-script companions for future Hindi, Kannada, Tamil and Telugu localization.
+- Long Indian addresses and names must never overflow.
