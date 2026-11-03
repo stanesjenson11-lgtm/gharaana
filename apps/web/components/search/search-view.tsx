@@ -62,41 +62,44 @@ export function SearchView({
   const fitKey = `${p.type}|${p.q ?? ""}|${p.area?.join(",") ?? ""}`;
 
   return (
-    <div className="flex h-[calc(100svh-4rem)] flex-col">
-      <FilterBar p={p} go={go} />
-      <div className="relative grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+    // Wide screens: two columns under the header, the filters at the top of the list column (they stay there as the
+    // homes scroll) and the map the full height beside it. Phones: the filters on top, then the list or the map.
+    <div className="relative flex h-[calc(100svh-4rem)] flex-col lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      <div className={`scroll-pt-16 lg:min-h-0 lg:flex-none lg:scroll-pt-12 lg:overflow-y-auto ${view === "map" ? "shrink-0" : "min-h-0 flex-1 overflow-y-auto"}`}>
+        <FilterBar p={p} go={go} />
         <section
           aria-labelledby="results-title"
           aria-busy={pending}
-          className={`min-h-0 overflow-y-auto px-3 pt-5 pb-24 transition-opacity duration-200 sm:px-5 ${pending ? "opacity-60" : ""} ${view === "map" ? "hidden lg:block" : ""}`}
+          className={`px-3 pt-5 pb-24 transition-opacity duration-200 sm:px-5 lg:pt-1 ${pending ? "opacity-60" : ""} ${view === "map" ? "hidden lg:block" : ""}`}
         >
-          <div className="flex flex-wrap items-end justify-between gap-3 px-1.5">
-            <div>
+          {/* The heading and its actions on one row, the count and the demo note on one line beneath. */}
+          <div className="px-1.5">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
               <h1 id="results-title" className="text-[1.375rem] leading-tight font-semibold">
                 Homes {what} {place}
               </h1>
-              <p className="mt-1 text-[14px] text-muted" aria-live="polite">
-                {cards.length === 1 ? "1 home" : `${cards.length} homes`}, every one listed by its owner
-                {sample && <span className="block">Includes sample listings for the demo.</span>}
-              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <SaveSearch query={toQuery(p)} />
+                <label className="flex items-center gap-2 text-[14px] text-muted">
+                  Sort
+                  <select
+                    value={p.sort}
+                    onChange={(e) => go({ sort: e.target.value as SearchParams["sort"] })}
+                    className="h-9 cursor-pointer rounded-lg border border-hairline bg-canvas px-2 text-[14px] font-medium text-ink"
+                  >
+                    {SORTS.map((s) => (
+                      <option key={s} value={s}>
+                        {SORT_LABEL[s]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <SaveSearch query={toQuery(p)} />
-              <label className="flex items-center gap-2 text-[14px] text-muted">
-                Sort
-                <select
-                  value={p.sort}
-                  onChange={(e) => go({ sort: e.target.value as SearchParams["sort"] })}
-                  className="h-9 cursor-pointer rounded-lg border border-hairline bg-canvas px-2 text-[14px] font-medium text-ink"
-                >
-                  {SORTS.map((s) => (
-                    <option key={s} value={s}>
-                      {SORT_LABEL[s]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
+            <p className="mt-1 text-[14px] text-muted" aria-live="polite">
+              {cards.length === 1 ? "1 home" : `${cards.length} homes`}, every one listed by its owner
+              {sample && ". Includes sample listings for the demo."}
+            </p>
           </div>
 
           {cards.length ? (
@@ -133,8 +136,9 @@ export function SearchView({
             </div>
           )}
         </section>
+      </div>
 
-        <div className={`relative min-h-0 border-hairline lg:border-l ${view === "list" ? "hidden lg:block" : ""}`}>
+        <div className={`relative min-h-0 border-hairline lg:border-l ${view === "list" ? "hidden lg:block" : "flex-1"}`}>
           {mapWanted && (
             <MapView
               cards={cards}
@@ -220,7 +224,6 @@ export function SearchView({
         >
           {view === "list" ? "Map" : "List"}
         </button>
-      </div>
     </div>
   );
 }

@@ -46,7 +46,8 @@ export function SiteHeader({ member, rentals = false }: { member?: Member | null
 
   const tone = "text-muted hover:text-ink";
   const here = "text-ink";
-  const touch = "inline-flex h-11 items-center justify-center rounded-full transition-colors duration-150";
+  // no display value here: each control sets its own (inline-flex, or hidden md:inline-flex), so the two never fight
+  const touch = "h-11 items-center justify-center rounded-full transition-colors duration-150";
   const capsule = "rounded-full bg-surface";
   const total = member ? member.alerts + member.unread : 0;
 
@@ -92,7 +93,7 @@ export function SiteHeader({ member, rentals = false }: { member?: Member | null
           <div className="ml-auto flex items-center gap-2 md:ml-0">
             <Link
               href="/post"
-              className={`${touch} bg-indigo px-4 text-[15px] font-semibold text-canvas hover:bg-indigo-deep`}
+              className={`${touch} inline-flex bg-indigo px-4 text-[15px] font-semibold text-canvas hover:bg-indigo-deep`}
             >
               <span className="sm:hidden">Post</span>
               <span className="hidden sm:inline">Post your property</span>
@@ -163,7 +164,7 @@ export function SiteHeader({ member, rentals = false }: { member?: Member | null
               </>
             )}
 
-            <button type="button" aria-haspopup="dialog" aria-controls="site-menu" onClick={() => sheet.current?.showModal()} className={`${touch} relative w-11 bg-surface md:hidden ${tone}`}>
+            <button type="button" aria-haspopup="dialog" aria-controls="site-menu" onClick={() => sheet.current?.showModal()} className={`${touch} relative inline-flex w-11 bg-surface md:hidden ${tone}`}>
               <span className="sr-only">{total ? `Open menu, ${total} new` : "Open menu"}</span>
               <ICONS.menu className="h-6 w-6" />
               {total > 0 && <span aria-hidden="true" className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-indigo ring-2 ring-canvas" />}

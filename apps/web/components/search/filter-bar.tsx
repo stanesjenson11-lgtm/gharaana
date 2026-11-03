@@ -27,9 +27,10 @@ const FURNISHING = [
 const toggle = <T,>(list: T[] | undefined, v: T) => (list?.includes(v) ? list.filter((x) => x !== v) : [...(list ?? []), v]);
 
 // Same look as the staff console's section pill (app/(console)/admin/console-chrome.tsx): flat grey capsules on white,
-// the filters in use drawn as white pills.
+// the filters in use drawn as white pills. On wide screens the bar sits in the list column, above the homes, so it is
+// drawn a size smaller there (36px capsules, 13px labels); phones keep 44px touch targets.
 const pill =
-  "inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 text-[15px] whitespace-nowrap transition-colors duration-150 ease-out-quint lg:px-4";
+  "inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 text-[15px] whitespace-nowrap transition-colors duration-150 ease-out-quint lg:h-7 lg:px-3 lg:text-[13px]";
 const pillState = (on: boolean) => (on ? "bg-canvas font-semibold text-ink" : "font-medium text-muted hover:text-ink");
 
 function Pop({ id, label, on, children }: { id: string; label: string; on: boolean; children: ReactNode }) {
@@ -76,11 +77,11 @@ export function FilterBar({ p, go }: { p: SearchParams; go: Go }) {
   const more = [p.tenants, p.avail, p.pets, p.parking, p.kind?.length, p.cond, p.floor?.length].filter(Boolean).length;
 
   return (
-    <div className="bg-canvas">
-      <div className="flex items-center gap-2 overflow-x-auto px-3 pt-1 pb-3 [scrollbar-width:none] md:px-6">
+    <div className="sticky top-0 z-10 bg-canvas">
+      <div className="flex items-center gap-2 overflow-x-auto px-3 pt-1 pb-3 [scrollbar-width:none] md:px-6 lg:px-5 lg:pt-px lg:pb-2">
         <form
           role="search"
-          className="flex h-11 min-w-[220px] flex-1 items-center rounded-full bg-surface pr-1 pl-4 focus-within:ring-2 focus-within:ring-indigo sm:max-w-sm"
+          className="flex h-11 min-w-[220px] flex-1 items-center rounded-full bg-surface pr-1 pl-4 focus-within:ring-2 focus-within:ring-indigo sm:max-w-sm lg:h-9 lg:pr-0.5 lg:pl-3.5"
           onSubmit={(e) => {
             e.preventDefault();
             const q = String(new FormData(e.currentTarget).get("q") ?? "").trim();
@@ -98,15 +99,15 @@ export function FilterBar({ p, go }: { p: SearchParams; go: Go }) {
             list="localities"
             defaultValue={p.q ?? ""}
             placeholder="Locality or landmark in Bengaluru"
-            className="h-full min-w-0 flex-1 bg-transparent text-[15px] placeholder:text-muted focus-visible:outline-none"
+            className="h-full min-w-0 flex-1 bg-transparent text-[15px] placeholder:text-muted focus-visible:outline-none lg:text-[13px]"
           />
           <datalist id="localities">
             {Object.keys(LOCALITIES).map((l) => (
               <option key={l} value={l} />
             ))}
           </datalist>
-          <button type="submit" aria-label="Search" className="grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-indigo text-canvas hover:bg-indigo-deep">
-            <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true">
+          <button type="submit" aria-label="Search" className="grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-indigo text-canvas hover:bg-indigo-deep lg:h-8 lg:w-8">
+            <svg viewBox="0 0 16 16" className="h-4 w-4 lg:h-3.5 lg:w-3.5" aria-hidden="true">
               <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
               <path d="m10.5 10.5 3 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
@@ -121,7 +122,7 @@ export function FilterBar({ p, go }: { p: SearchParams; go: Go }) {
                 type="button"
                 aria-pressed={p.type === t}
                 onClick={() => go({ type: t, min: undefined, max: undefined })}
-                className={`h-9 cursor-pointer rounded-full px-4 text-[15px] transition-colors duration-150 ${p.type === t ? "bg-canvas font-semibold text-ink" : "font-medium text-muted hover:text-ink"}`}
+                className={`h-9 cursor-pointer rounded-full px-4 text-[15px] transition-colors duration-150 lg:h-7 lg:px-3.5 lg:text-[13px] ${p.type === t ? "bg-canvas font-semibold text-ink" : "font-medium text-muted hover:text-ink"}`}
               >
                 {t === "rent" ? "Rent" : "Buy"}
               </button>

@@ -28,9 +28,10 @@ async function Results({ searchParams }: Pick<PageProps<"/search">, "searchParam
 
 function SearchSkeleton() {
   return (
-    <div className="flex h-[calc(100svh-4rem)] flex-col" aria-busy="true" aria-label="Loading homes">
-      <div className="h-[65px] border-b border-hairline" />
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+    // the same frame as SearchView: filters above the list, the map the full height beside it on wide screens
+    <div className="flex h-[calc(100svh-4rem)] flex-col lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]" aria-busy="true" aria-label="Loading homes">
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="h-[60px] lg:h-[45px]" />
         <div className="grid content-start gap-4 p-5 sm:grid-cols-2">
           {Array.from({ length: 4 }, (_, i) => (
             <div key={i} className="animate-pulse">
@@ -40,8 +41,8 @@ function SearchSkeleton() {
             </div>
           ))}
         </div>
-        <div className="hidden bg-surface lg:block" />
       </div>
+      <div className="hidden bg-surface lg:block" />
     </div>
   );
 }
