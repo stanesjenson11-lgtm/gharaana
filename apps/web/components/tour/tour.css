@@ -31,7 +31,7 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 
 /* ============ Stage ============ */
-.tour { position: relative; height: 900svh; }
+.tour { position: relative; height: 700svh; }
 .stage {
   position: sticky; top: 0;
   height: 100svh; overflow: clip; isolation: isolate;
@@ -54,7 +54,7 @@ html.lenis, html.lenis body { height: auto; }
 @keyframes tour-fade { from { opacity: 0; } }
 .search { animation: tour-rise 1.1s var(--ease-out) 0.35s both; }
 .nav { animation: tour-fade 1s var(--ease-out) 0.5s both; }
-.stage::after {
+.stage::after, .depth::after {
   content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1;
   background: radial-gradient(130% 95% at 50% 45%, transparent 60%, color-mix(in oklab, var(--ink) 26%, transparent) 100%);
 }
@@ -74,24 +74,54 @@ html.lenis, html.lenis body { height: auto; }
 }
 
 /* ============ Hero ============ */
+/* Covers the whole stage, so the tower cut-outs (.depth) line up with the poster: title up in the sky, search low.
+   Inside, back to front: birds, title, towers, search. */
 .hero {
-  position: absolute; left: 0; right: 0; top: 40cqh;
-  padding-inline: var(--gutter);
-  display: flex; flex-direction: column; align-items: center; text-align: center;
-  gap: clamp(0.6rem, 1.6cqh, 1.25rem);
+  position: absolute; inset: 0;
+  padding: clamp(5.5rem, 13cqh, 8.5rem) var(--gutter) clamp(2rem, 9cqh, 5.5rem);
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center;
   pointer-events: none; z-index: 3;
 }
 .hero__title {
+  position: relative; z-index: 1;
   margin: 0; font-family: var(--font-display); font-weight: 900;
   font-size: clamp(3rem, 8.4vw, 8rem); line-height: 0.92; letter-spacing: -0.045em;
-  text-wrap: balance; color: color-mix(in oklab, var(--ink) 70%, black);
+  text-wrap: balance; color: #fff;
+  /* white on a hazy sky: a soft navy glow keeps the letters readable */
+  text-shadow: 0 1px 3px rgb(0 18 56 / 0.22), 0 8px 40px rgb(0 18 56 / 0.4);
 }
 .hero__line { display: block; }
+
+/* public/tour-depth.svg is the two towers' outline in the 1920×1080 frame; "cover" scales it exactly like the poster. */
+/* Not fully opaque: the letters show faintly through the glass, so a tower never hides a whole letter. */
+.depth {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0.8;
+  -webkit-mask: url(/tour-depth.svg?v=13) center / cover no-repeat;
+  mask: url(/tour-depth.svg?v=13) center / cover no-repeat;
+}
+
+.birds { position: absolute; inset: 0; overflow: clip; pointer-events: none; }
+.bird {
+  position: absolute; left: 0; top: var(--top); width: calc(var(--s) * 2.1rem);
+  color: color-mix(in oklab, var(--ink) 80%, black); opacity: 0.78;
+  animation: bird-fly var(--dur) linear var(--delay) infinite;
+}
+.bird svg { display: block; width: 100%; overflow: visible; animation: bird-bob 2.6s ease-in-out infinite alternate; }
+.bird__wing {
+  fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round;
+  transform-box: view-box; transform-origin: 20px 8px;
+  animation: bird-flap var(--flap) ease-in-out infinite alternate;
+}
+.bird ellipse { fill: currentColor; }
+@keyframes bird-fly { from { translate: -6cqw 0; } to { translate: 106cqw 0; } }
+@keyframes bird-bob { to { translate: 0 0.5rem; } }
+@keyframes bird-flap { to { scale: 1 -0.55; } }
 .w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.1em; margin-bottom: -0.1em; }
 .wi { display: inline-block; }
 
 .search {
-  pointer-events: auto; margin-top: clamp(0.5rem, 2cqh, 1.5rem);
+  z-index: 3;
+  pointer-events: auto;
   display: flex; align-items: center; gap: 0.5rem;
   width: min(100%, 46rem);
   padding: 0.5rem; border-radius: 999px;
@@ -190,14 +220,12 @@ html.lenis, html.lenis body { height: auto; }
   .sc-close::before { background: linear-gradient(0deg, color-mix(in oklab, var(--ink) 85%, transparent) 0%, color-mix(in oklab, var(--ink) 55%, transparent) 55%, transparent 90%); }
   .sc-close { align-items: flex-end; }
 }
-@media (max-aspect-ratio: 1/1) {
-  .hero { top: 44cqh; }
-}
 
 /* ============ Motion preferences ============ */
 @media (prefers-reduced-motion: reduce) {
   .world { transition: none; }
   .search, .nav { animation: none; }
+  .birds { display: none; }
 }
 
 /* ?debug: live frame rate, resolution and quality tier */

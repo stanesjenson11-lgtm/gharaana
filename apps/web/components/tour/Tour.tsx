@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type Lenis from "lenis";
 import type { buildTour } from "./timeline";
-import { Captions, Close, Hero, Nav } from "./Chrome";
-import { TOTAL } from "./config";
+import { Captions, Close, Hero, Nav, Poster } from "./Chrome";
+import { FILM_V as V, TOTAL } from "./config";
 import type { World } from "@/components/world/World";
 import "./tour.css";
 
@@ -18,12 +18,9 @@ const PINS = [
   { id: "river", label: "Riverside" },
 ] as const;
 
-const V = "?v=12"; // bump with the film or its tick table (public/tour-*)
 // The film, its tick table and the scroll engine (GSAP, ScrollTrigger, Lenis) load on the visitor's first scroll, touch
 // or key press: the first paint is the HTML and the poster (frame 0 of the film), with no video bytes and little script.
 const WAKE = ["wheel", "touchstart", "pointerdown", "keydown", "scroll"] as const;
-// Phones get the 1280 poster (the film they play is 720p too); 1920 from wide screens up.
-const POSTER_SIZES = "100vw";
 
 /** The scroll tour: default = photoreal film scrubbed by scroll; `?mode=3d` = live three.js (used by ai-renders). */
 export default function Tour() {
@@ -38,8 +35,9 @@ export default function Tour() {
   const [woke, setWoke] = useState(false);
   // browser-only values, read without a setState-in-effect (server render: video mode, no src yet)
   const mode = useSyncExternalStore(noop, () => (new URLSearchParams(location.search).get("mode") === "3d" ? "3d" : "video"), () => "video");
-  // both files are all-intra (every frame a keyframe) so scroll seeks are instant; small screens get the lighter one
-  const src = useSyncExternalStore(noop, () => (innerWidth >= 1280 ? `/tour-1080.mp4${V}` : `/tour-720.mp4${V}`), () => null);
+  // a keyframe every 4 frames and no B-frames, so a scroll seek decodes at most 4 frames. 1080p wherever the screen
+  // has the pixels for it (laptops, tablets), 720p on phones, where it is already about the screen's own width.
+  const src = useSyncExternalStore(noop, () => (innerWidth >= 1024 || innerWidth * devicePixelRatio >= 1600 ? `/tour-1080.mp4${V}` : `/tour-720.mp4${V}`), () => null);
   const awake = woke || mode === "3d"; // the 3D recorder starts at once
 
   useEffect(() => {
@@ -64,7 +62,7 @@ export default function Tour() {
         let lenis: Lenis | null = null;
         const raf = (t: number) => lenis?.raf(t * 1000);
         if (!reduced) {
-          lenis = new LenisCtor({ lerp: 0.09 });
+          lenis = new LenisCtor({ lerp: 0.12 });
           lenis.on("scroll", ScrollTrigger.update);
           gsap.ticker.add(raf);
           gsap.ticker.lagSmoothing(0);
@@ -85,7 +83,7 @@ export default function Tour() {
           v.addEventListener("loadeddata", onLoaded, { once: true });
           v.addEventListener("error", onError, { once: true });
           if (v.readyState >= 2) onLoaded();
-          const FRAME = 1 / 24;
+          const FRAME = 1 / 48; // the film's frame rate (public/tour-timing.json)
           let want = 0, last = -1, seeking = false;
           const seek = () => {
             if (seeking) return;
@@ -99,7 +97,7 @@ export default function Tour() {
           v.addEventListener("seeked", onSeeked);
           // tick -> video time: look the frame up in the film's tick table (binary search over a rising list);
           // until the table loads, fall back to a straight proportion
-          let ticks: number[] | null = null, fps = 24;
+          let ticks: number[] | null = null, fps = 48;
           fetch(`/tour-timing.json${V}`).then((r) => r.json()).then((j: { fps: number; ticks: number[] }) => { ticks = j.ticks; fps = j.fps; }).catch(() => undefined);
           const timeAt = (t: number) => {
             if (!ticks) return (t / TOTAL) * (v.duration || 0);
@@ -153,11 +151,7 @@ export default function Tour() {
       <div className="stage" data-world={ready}>
         {mode === "video"
           ? <>
-              <picture>
-                <source type="image/avif" srcSet={`/tour-poster-1280.avif${V} 1280w, /tour-poster-1920.avif${V} 1920w`} sizes={POSTER_SIZES} />
-                <img className="poster" src={`/tour-poster-1280.webp${V}`} srcSet={`/tour-poster-1280.webp${V} 1280w, /tour-poster-1920.webp${V} 1920w`}
-                  sizes={POSTER_SIZES} alt="" aria-hidden="true" fetchPriority="high" />
-              </picture>
+              <Poster priority />
               <video ref={video} className="world" src={awake && src ? src : undefined} muted playsInline preload="auto" aria-hidden="true" />
             </>
           : <>

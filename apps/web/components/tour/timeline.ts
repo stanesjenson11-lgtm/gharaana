@@ -24,7 +24,7 @@ export function buildTour(root: HTMLElement, o: TourHooks) {
       trigger: root,
       start: "top top",
       end: "bottom bottom",
-      scrub: o.reduced ? true : 0.6,
+      scrub: true, // Lenis already smooths the scroll; a second smoothing here only added lag
       invalidateOnRefresh: true,
       onUpdate: (self) => {
         const tick = self.progress * TOTAL;
@@ -61,6 +61,8 @@ export function buildTour(root: HTMLElement, o: TourHooks) {
   }
 
   fx("[data-hero]", { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -90 }, 1, 6, "power2.in");
+  // The tower cut-outs match frame 0 only: gone before the camera moves (and before the hero starts to rise).
+  fx("[data-depth]", { autoAlpha: 0.8 }, { autoAlpha: 0 }, 0, 0.9); // 0.8 as in tour.css
 
   const cap = (id: string, inAt: number, outAt: number) => {
     const s = `[data-cap="${id}"]`;

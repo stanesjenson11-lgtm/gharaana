@@ -1,10 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { RENTALS } from "@/lib/search";
-import { LOGO_V, STOPS } from "./config";
+import { FILM_V, LOGO_V, STOPS } from "./config";
 
 type Tone = "ink" | "paper";
+
+/** Frame 0 of the film (the page's largest image); phones get the 1280 one. */
+export function Poster({ priority = false }: { priority?: boolean }) {
+  return (
+    <picture>
+      <source type="image/avif" srcSet={`/tour-poster-1280.avif${FILM_V} 1280w, /tour-poster-1920.avif${FILM_V} 1920w`} sizes="100vw" />
+      <img className="poster" src={`/tour-poster-1280.webp${FILM_V}`} srcSet={`/tour-poster-1280.webp${FILM_V} 1280w, /tour-poster-1920.webp${FILM_V} 1920w`}
+        sizes="100vw" alt="" aria-hidden="true" fetchPriority={priority ? "high" : undefined} />
+    </picture>
+  );
+}
+
+/* ---------- Birds: a few crows crossing the sky, left to right (CSS only; hidden with reduced motion) ---------- */
+
+// top (% of the stage), seconds to cross, start offset (negative = already on the way), size
+const BIRDS = [
+  [11, 27, -6, 1], [13, 27, -6.6, 0.8], [9.5, 27, -7.1, 0.85], // a loose three
+  [19, 34, -21, 0.65], [7, 23, -15, 0.9],
+] as const;
+
+function Birds() {
+  return (
+    <div className="birds" aria-hidden="true">
+      {BIRDS.map(([top, dur, delay, s], i) => (
+        <span key={i} className="bird" style={{ "--top": `${top}cqh`, "--dur": `${dur}s`, "--delay": `${delay}s`, "--s": s, "--flap": `${0.42 + i * 0.05}s` } as CSSProperties}>
+          <svg viewBox="0 0 40 16">
+            <path className="bird__wing" d="M20 8 Q13 1 2 5" />
+            <path className="bird__wing" d="M20 8 Q27 1 38 5" />
+            <ellipse cx="20" cy="8.4" rx="3.2" ry="1.7" />
+          </svg>
+        </span>
+      ))}
+    </div>
+  );
+}
 
 /* ---------- Hero: headline + search (the first-viewport action) ---------- */
 
@@ -12,16 +47,16 @@ type Tone = "ink" | "paper";
 const MODES = RENTALS ? (["Buy", "Rent", "Invest"] as const) : (["Buy", "Invest"] as const);
 
 export function Hero() {
-  const words = (s: string) => s.split(" ").map((w, i) => (
-    <span key={i}><span className="w"><span className="wi">{w}</span></span>{" "}</span>
-  ));
-
   return (
     <div className="hero" data-hero>
+      <Birds />
       <h1 className="hero__title">
-        <span className="hero__line">{words("Step inside")}</span>
-        <span className="hero__line">{words("your next address.")}</span>
+        <span className="hero__line">Step inside</span>
+        <span className="hero__line">your next address.</span>
       </h1>
+      {/* Two towers cut from the same frame and laid over the title, so the words pass behind them
+          (public/tour-depth.svg: their outlines in the 1920×1080 frame, scaled like the poster). */}
+      <div className="depth" data-depth aria-hidden="true"><Poster /></div>
 
       <form className="search" role="search" action="/search" method="get" aria-label="Search homes">
         <fieldset className="search__modes">

@@ -4,6 +4,9 @@ export const TOTAL = 110;
 /** public/brand/logo-*.svg (made by scripts/logo-svg.ts from components/brand/logo-paths.ts); bump with the logo. */
 export const LOGO_V = "?v=1";
 
+/** public/tour-* (film, tick table, posters, tower mask); bump with any of them. */
+export const FILM_V = "?v=13";
+
 export type Stop = {
   id: string;
   title: string;
