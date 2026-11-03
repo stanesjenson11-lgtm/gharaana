@@ -1,0 +1,5 @@
+# The Vercel CLI uploads local files (it doesn't read .gitignore). The site needs none of these:
+ai-renders/
+.chrome-profile/
+.impeccable/
+.claude/
