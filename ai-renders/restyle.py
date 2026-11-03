@@ -9,7 +9,7 @@
 #
 # Usage: python restyle.py [n ...]   restyle segments n.. (1-based, in order; default: all), then join + site files
 #        python restyle.py --join    only rebuild videos/tour-real.mp4 from the existing segments (+ site files)
-#        python restyle.py --site    only re-encode public/tour-1080.mp4 and public/tour-720.mp4 from the master
+#        python restyle.py --site    only re-encode apps/web/public/tour-1080.mp4 and tour-720.mp4 from the master
 import base64, json, os, re, subprocess, sys, time, urllib.request, urllib.error
 from pathlib import Path
 
@@ -335,12 +335,12 @@ GRADE_3D = ("eq=saturation=0.9:contrast=1.05,colorbalance=rs=-0.02:bs=0.025:rh=0
 def site(master=None, grade=None):
     """The two files the site scrubs (public/, gitignored: the 1080p one is over GitHub's 100 MB limit). All-intra so
     every scroll seek lands on a keyframe; Tour.tsx picks 1080p for screens >= 1280 px wide, 720p otherwise."""
-    master, pub = master or VID / "tour-real.mp4", HERE.parent / "public"
+    master, pub = master or VID / "tour-real.mp4", HERE.parent / "apps" / "web" / "public"
     pre = grade + "," if grade else ""
     common = ["-c:v", "libx264", "-g", "1", "-keyint_min", "1", "-preset", "medium", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an"]
     ff("-i", master, "-vf", pre + "null", "-crf", "21", *common, pub / "tour-1080.mp4")
     ff("-i", master, "-vf", pre + "scale=1280:720:flags=lanczos", "-crf", "20", *common, pub / "tour-720.mp4")
-    print(f"wrote public/tour-1080.mp4 and public/tour-720.mp4 from {master.name}")
+    print(f"wrote apps/web/public/tour-1080.mp4 and tour-720.mp4 from {master.name}")
 
 if __name__ == "__main__":
     if sys.argv[1:] == ["--site"]:

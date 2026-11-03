@@ -1,6 +1,6 @@
 # The whole 3D tour as ONE Gemini Omni generation: the 45.6 s recording sped up to 9.9 s (the model's input limit), so
 # one call restyles everything with one consistent light and grade. The site scrubs it by scroll, so the speed-up never
-# shows; public/tour-timing.json is rewritten so each scroll tick still lands on the matching frame.
+# shows; apps/web/public/tour-timing.json is rewritten so each scroll tick still lands on the matching frame.
 # Usage: python oneshot.py          (paid: one 1080p call, ~$1.50; key from GEMINI_API_KEY)
 #        python oneshot.py --site   (re-encode the site files from videos/oneshot-fit.mp4, no call)
 import base64, json, shutil, subprocess, sys, time, urllib.error
@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import restyle as R
 
-VID, PUB = R.VID, R.HERE.parent / "public"
+VID, PUB = R.VID, R.HERE.parent / "apps" / "web" / "public"
 SRC, IN, REAL, FIT = VID / "tour-3d.mp4", VID / "oneshot-in.mp4", VID / "oneshot-real.mp4", VID / "oneshot-fit.mp4"
 SECS = 9.9
 REFS = [R.SEG / "ref-opening.jpg", R.SEG / "ref-tower.jpg", R.SEG / "ref-interior.jpg"]

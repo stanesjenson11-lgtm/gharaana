@@ -1,5 +1,5 @@
 // Record the 3D tour's real camera path (ticks 0-110) frame by frame into one continuous video.
-// Needs the site on :3125 (next start -p 3125). Usage: node record.mjs
+// Needs the site on :3125 (pnpm build, then pnpm --filter web start -p 3125). Usage: node record.mjs
 //
 // The page eases the camera into and out of each caption "hold"; on video that reads as a series of separate shots.
 // So the recording undoes those holds and gives each stretch of the path its own length in seconds, with the speed
@@ -7,7 +7,7 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { KEYS } from "../components/world/path.ts";
+import { KEYS } from "../apps/web/components/world/path.ts";
 import { openTour } from "./cdp.mjs";
 
 const FPS = 24, W = 1920, H = 1080; // 1080p source: more fine detail for the photoreal pass to keep
@@ -60,7 +60,7 @@ if (import.meta.main) {
   writeFileSync(join(DIR, "tour-3d.json"), JSON.stringify({ fps: FPS, frames: Math.round(DURATION * FPS) + 1, cuts, context: CONTEXT }));
   // the page's scroll position is in ticks; the video's speed per tick varies, so the site maps tick -> frame with this
   const ticks = Array.from({ length: Math.round(DURATION * FPS) + 1 }, (_, f) => +tickAt(f / FPS).toFixed(3));
-  writeFileSync(join(import.meta.dirname, "..", "public", "tour-timing.json"), JSON.stringify({ fps: FPS, ticks }));
+  writeFileSync(join(import.meta.dirname, "..", "apps", "web", "public", "tour-timing.json"), JSON.stringify({ fps: FPS, ticks }));
   // FROM=n: re-render only frames n+ and keep the earlier ones from the current tour-3d.mp4
   // FROM=n KEEP=1: resume an interrupted recording; frames below n are already in videos/frames
   const FROM = +(process.env.FROM ?? 0);

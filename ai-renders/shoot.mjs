@@ -1,4 +1,4 @@
-﻿// Screenshots of the 3D tour at given ticks (default: the six stops). Needs the site on :3125 (next start -p 3125).
+// Screenshots of the 3D tour at given ticks (default: the six stops). Needs the site on :3125 (pnpm --filter web start -p 3125).
 // Usage: node shoot.mjs [tick ...]
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

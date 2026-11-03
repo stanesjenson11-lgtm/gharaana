@@ -1,37 +1,39 @@
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { CAPTIONS, TOTAL } from "./config";
+import { STOPS, TONE_BREAKS, TOTAL } from "./config";
 
+type Tone = "ink" | "paper";
 type Vars = gsap.TweenVars;
 
 export type TourHooks = {
   reduced: boolean;
-  onTick: (tick: number) => void; // where the scroll asks the tour to be; Tour.tsx moves the tour there and calls seek()
+  onTone: (t: Tone) => void;
+  onStop: (i: number) => void;
+  onTick: (tick: number) => void; // drives the 3D camera
 };
 
 const FADE = new Set(["opacity", "autoAlpha"]);
 
-/** The HTML layer over the film: hero, captions, close. The film itself is rendered from apps/web/film.
- *  The timeline is not scrubbed by the scroll: Tour.tsx seeks it to the tour's own tick, which the film follows too, so
- *  the two never drift apart. Tour.tsx imports this module (and GSAP with it) only after the page is up, so it never
- *  holds up the first paint. */
+/** The HTML layer over the 3D world: hero, captions, close, rail. The camera itself lives in components/world. */
 export function buildTour(root: HTMLElement, o: TourHooks) {
   gsap.registerPlugin(ScrollTrigger);
-  ScrollTrigger.config({ ignoreMobileResize: true });
-  let api!: ReturnType<typeof make>;
-  const ctx = gsap.context(() => { api = make(root, o); }, root);
-  return { ...api, destroy() { api.destroy(); ctx.revert(); } };
-}
-
-function make(root: HTMLElement, o: TourHooks) {
   const q = gsap.utils.selector(root);
+  const one = (s: string) => q(s)[0] as HTMLElement;
 
-  const tl = gsap.timeline({ paused: true, defaults: { ease: "none" } });
-  const st = ScrollTrigger.create({
-    trigger: root,
-    start: "top top",
-    end: "bottom bottom",
-    onUpdate: (self) => o.onTick(self.progress * TOTAL),
+  const tl = gsap.timeline({
+    defaults: { ease: "none" },
+    scrollTrigger: {
+      trigger: root,
+      start: "top top",
+      end: "bottom bottom",
+      scrub: o.reduced ? true : 0.6,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => {
+        const tick = self.progress * TOTAL;
+        o.onTick(tick);
+        track(tick, self.progress);
+      },
+    },
   });
 
   /** fromTo on the master timeline. With reduced motion, only fades animate; movement snaps. */
@@ -54,22 +56,33 @@ function make(root: HTMLElement, o: TourHooks) {
     if (Object.keys(t.rest).length) tl.set(target, t.rest, at + dur);
   }
 
-  // the hero is gone by tick 4, while the film still holds frame 1 (the cut-out of the blocks matches only that frame)
-  fx("[data-hero-title], [data-hero]", { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -90 }, 0.4, 3.2, "power2.in");
-  fx("[data-cutout]", { autoAlpha: 1 }, { autoAlpha: 0 }, 3.6, 0.3);
+  const railFill = one(".rail__fill");
+  let tone: Tone = "ink", stop = 0;
+  function track(tick: number, p: number) {
+    railFill.style.transform = `scaleY(${p})`;
+    const nt = [...TONE_BREAKS].reverse().find(([at]) => tick >= at)![1];
+    if (nt !== tone) o.onTone((tone = nt));
+    const ns = Math.max(0, STOPS.map((s) => s.at - 7).findLastIndex((a) => tick >= a));
+    if (ns !== stop) o.onStop((stop = ns));
+  }
+
+  fx("[data-hero]", { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -90 }, 1, 6, "power2.in");
 
   const cap = (id: string, inAt: number, outAt: number) => {
     const s = `[data-cap="${id}"]`;
     fx(s, { autoAlpha: 0 }, { autoAlpha: 1 }, inAt, 0.6);
-    fx(`${s} .cap__kicker`, { x: -12, autoAlpha: 0 }, { x: 0, autoAlpha: 1 }, inAt, 1.2, "power2.out");
     fx(`${s} .wi`, { yPercent: 115 }, { yPercent: 0, stagger: 0.18 }, inAt, 1.4, "power3.out");
     fx(`${s} .cap__line`, { y: 16, autoAlpha: 0 }, { y: 0, autoAlpha: 1 }, inAt + 0.9, 1.4, "power2.out");
     fx(s, { autoAlpha: 1 }, { autoAlpha: 0 }, outAt, 1.2, "none", true);
   };
-  for (const [id, [inAt, outAt]] of Object.entries(CAPTIONS)) cap(id, inAt, outAt);
+  cap("sky", 7, 15);
+  cap("tower", 21, 33);
+  cap("inside", 53, 63);
+  cap("plan", 71, 80);
+  cap("hood", 87, 95.5);
 
-  fx(".sc-close", { autoAlpha: 0 }, { autoAlpha: 1 }, 116, 3);
-  fx("[data-close] > *", { y: 36, autoAlpha: 0 }, { y: 0, autoAlpha: 1, stagger: 0.35 }, 116.5, 2, "power3.out");
+  fx(".sc-close", { autoAlpha: 0 }, { autoAlpha: 1 }, 102, 3);
+  fx("[data-close] > *", { y: 36, autoAlpha: 0 }, { y: 0, autoAlpha: 1, stagger: 0.35 }, 102.5, 2, "power3.out");
 
   tl.set({}, {}, TOTAL); // fix total length
 
@@ -91,22 +104,26 @@ function make(root: HTMLElement, o: TourHooks) {
     }
   }
 
-  // The intro (title words rising, line and search fading up) is plain CSS in tour.css: it starts with the first paint
-  // instead of waiting for this script, which on a phone took seconds.
+  /* ---- intro (time-based, once on load) ---- */
+  if (!o.reduced) {
+    const intro = gsap.timeline({ delay: 0.1, defaults: { ease: "power4.out" } });
+    intro
+      .fromTo(q(".hero .wi"), { yPercent: 115 }, { yPercent: 0, duration: 1.3, stagger: 0.1 }, 0.35)
+      .fromTo(q(".hero__sub"), { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 1 }, 1)
+      .fromTo(q(".search"), { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: 1.1 }, 1.15)
+      .fromTo(q(".nav, .rail"), { autoAlpha: 0 }, { autoAlpha: 1, duration: 1 }, 1.3);
+    cleanups.push(() => intro.kill());
+  }
   document.documentElement.dataset.ready = "1";
 
   return {
-    /** The scroll y of a tick. */
     goto(tick: number) {
+      const st = tl.scrollTrigger!;
       return st.start + (tick / TOTAL) * (st.end - st.start);
-    },
-    /** Shows the HTML layer as it is at this tick. */
-    seek(tick: number) {
-      tl.time(Math.min(TOTAL, Math.max(0, tick)));
     },
     destroy() {
       cleanups.forEach((f) => f());
-      st.kill();
+      tl.scrollTrigger?.kill();
       tl.kill();
     },
   };

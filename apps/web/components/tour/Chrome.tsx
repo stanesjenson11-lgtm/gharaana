@@ -1,6 +1,5 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { authClient } from "@/lib/auth-client";
 import { RENTALS } from "@/lib/search";
@@ -13,29 +12,18 @@ type Tone = "ink" | "paper";
 // Rent shows only once rentals launch (lib/search.ts). Invest is a sale search.
 const MODES = RENTALS ? (["Buy", "Rent", "Invest"] as const) : (["Buy", "Invest"] as const);
 
-// --i staggers the CSS intro across the whole title
-const words = (s: string, from = 0) => s.split(" ").map((w, i) => (
-  <span key={i}><span className="w"><span className="wi" style={{ "--i": from + i } as CSSProperties}>{w}</span></span>{" "}</span>
-));
-const TITLE = (
-  <>
-    <span className="hero__line">{words("Step inside")}</span>
-    <span className="hero__line">{words("your next address.", 2)}</span>
-  </>
-);
-
-/** The title on its own layer, so the cut-out of the blocks (Tour.tsx) can sit between it and the search. */
-export function HeroTitle() {
-  return (
-    <div className="hero hero--title" data-hero-title>
-      <h1 className="hero__title">{TITLE}</h1>
-    </div>
-  );
-}
-
 export function Hero() {
+  const words = (s: string) => s.split(" ").map((w, i) => (
+    <span key={i}><span className="w"><span className="wi">{w}</span></span>{" "}</span>
+  ));
+
   return (
-    <div className="hero hero--rest" data-hero>
+    <div className="hero" data-hero>
+      <h1 className="hero__title">
+        <span className="hero__line">{words("Step inside")}</span>
+        <span className="hero__line">{words("your next address.")}</span>
+      </h1>
+      <p className="hero__sub">Scroll to take the tour.</p>
 
       <form className="search" role="search" action="/search" method="get" aria-label="Search homes">
         <fieldset className="search__modes">
@@ -83,7 +71,6 @@ export function Captions() {
     <div className="caps" aria-live="polite">
       {STOPS.filter((s) => s.title).map((s) => (
         <section key={s.id} className="cap" data-cap={s.id} data-tone={s.tone}>
-          {s.kicker && <p className="cap__kicker">{s.kicker}</p>}
           <h2 className="cap__title">
             {s.title.split(" ").map((w, i) => <span key={i}><span className="w"><span className="wi">{w}</span></span>{" "}</span>)}
           </h2>
@@ -94,6 +81,25 @@ export function Captions() {
   );
 }
 
+/* ---------- Stop rail: where you are in the tour; click to jump ---------- */
+
+export function StopRail({ tone, active, onGo }: { tone: Tone; active: number; onGo: (i: number) => void }) {
+  return (
+    <nav className="rail" data-tone={tone} aria-label="Tour stops">
+      <div className="rail__track" aria-hidden="true"><i className="rail__fill" /></div>
+      <ol className="rail__list">
+        {STOPS.map((s, i) => (
+          <li key={s.id}>
+            <button type="button" className="rail__btn" aria-current={i === active ? "step" : undefined} onClick={() => onGo(i)}>
+              <span className="rail__dot" aria-hidden="true" />
+              <span className="rail__label">{s.rail}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
 
 /* ---------- Close: the last scene, and the way into a real visit (search, then "Schedule a visit" on a home) ---------- */
 

@@ -1,13 +1,13 @@
 # Photoreal surfaces for the 3D city, made with Gemini's image model: facades, rooftops and clouds.
 # The scene stays one 3D world (so nothing changes between frames); only its surfaces get real-photo detail.
 # Usage: python textures.py [name ...]   (default: all; key from GEMINI_API_KEY; ~$0.067 per image, each made once)
-# Writes public/tex/<name>.jpg (facades, roofs) and public/tex/<name>.png (clouds, alpha from the black background).
+# Writes apps/web/public/tex/<name>.jpg (facades, roofs) and public/tex/<name>.png (clouds, alpha from the black background).
 import base64, io, json, os, sys, urllib.request, urllib.error
 from pathlib import Path
 import numpy as np
 from PIL import Image
 
-OUT = Path(__file__).parent.parent / "public" / "tex"; OUT.mkdir(parents=True, exist_ok=True)
+OUT = Path(__file__).parent.parent / "apps" / "web" / "public" / "tex"; OUT.mkdir(parents=True, exist_ok=True)
 MODEL = os.environ.get("IMAGE_MODEL", "gemini-3.1-flash-image")
 URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
 

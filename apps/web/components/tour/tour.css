@@ -1,83 +1,50 @@
-/* ============ Page (realtz globals, scoped to the home page so they don't touch the app's Tailwind theme) ============ */
+/* ============ Brand tokens, scoped to the home page (<main className="gharaana">) ============ */
 /* Gharaana brand kit (July 2024): white, #FFDA1A yellow, #1560BD blue. Navy measured from the kit's wordmark. */
 .gharaana {
   --blue: #1560bd;
   --sun: #ffda1a;
   --ink: #001238;
   --paper: #ffffff;
-
-  /* Everything else is a mix of the four above. */
   --sky-1: color-mix(in oklab, var(--blue) 7%, white);
   --sky-2: color-mix(in oklab, var(--blue) 18%, white);
   --sky-3: color-mix(in oklab, var(--blue) 38%, white);
   --blue-deep: color-mix(in oklab, var(--blue) 62%, var(--ink));
   --night: color-mix(in oklab, var(--blue) 14%, var(--ink));
   --glow: color-mix(in oklab, var(--sun) 55%, white);
-  --park: color-mix(in oklch, var(--blue) 46%, var(--sun));
-  --park-deep: color-mix(in oklch, var(--park) 70%, var(--ink));
-
-  /* Text: an Adobe Fonts family first (live once a kit is added), free stand-in second. */
+  /* Adobe Fonts families first (live once the kit is added), the free stand-in from (marketing)/layout.tsx second. */
+  --font-display: "neue-haas-grotesk-display", var(--font-fallback), "Helvetica Neue", Arial, sans-serif;
   --font-text: "neue-haas-grotesk-text", var(--font-fallback), "Helvetica Neue", Arial, sans-serif;
-  /* Display faces (app/(marketing)/layout.tsx): a tall bold sans for the hero, a ball-terminal serif for headlines, a brush script for small accents. */
-  --font-hero: var(--font-anton), Impact, "Arial Narrow", sans-serif;
-  --font-serif: var(--font-gloock), Georgia, serif;
-  --font-script: var(--font-yellowtail), "Brush Script MT", cursive;
-
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --gutter: clamp(1.25rem, 4vw, 3.5rem);
-
+  background: var(--sky-1);
   color: var(--ink);
   font-family: var(--font-text);
-  font-size: 1rem;
-  font-weight: 400;
   line-height: 1.5;
-  text-rendering: optimizeLegibility;
 }
-
-html:has(.gharaana), html:has(.gharaana) body {
-  background: #eff4fb; /* --sky-1 */
-  color-scheme: light;
-  scrollbar-width: thin;
-  scrollbar-color: #1560bd #eff4fb;
-}
-
-
 .gharaana ::selection { background: var(--sun); color: var(--ink); }
 .gharaana :is(input, button) { caret-color: var(--blue); accent-color: var(--blue); }
+.gharaana :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 5px var(--sun); }
 
-/* Double ring reads on white, blue and navy alike. */
-.gharaana :focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 5px var(--sun);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .gharaana *, .gharaana *::before, .gharaana *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
-  }
-}
+/* Lenis owns scroll while it runs. */
+html.lenis, html.lenis body { height: auto; }
+.lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 
 /* ============ Stage ============ */
-.tour { position: relative; height: 480svh; }  /* less to scroll through */
+.tour { position: relative; height: 900svh; }
 .stage {
   position: sticky; top: 0;
   height: 100svh; overflow: clip; isolation: isolate;
   container-type: size;
-  /* Sky while the film's poster loads. */
+  /* Poster sky while the 3D world loads (and if WebGL is unavailable). */
   background: linear-gradient(180deg, #a9c4e3 0%, #dbe7f3 52%, #f6f8fb 100%);
 }
 .scene { position: absolute; inset: 0; pointer-events: none; }
 .sc-close { visibility: hidden; z-index: 4; }
 
-/* The film: path-traced in Blender, scrubbed by scroll. Its poster shows until the video can play. */
-.film { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; }
-.film--video { opacity: 0; }  /* over the poster once its first frame is in */
-.stage[data-world="ready"] .film--video { opacity: 1; }
-.film--cutout { z-index: 3; pointer-events: none; }
+/* The 3D world: one canvas, one camera. */
+.world { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; opacity: 0; transition: opacity 1.4s var(--ease-out); background: #e8e6e2; }
+.stage[data-world="ready"] .world { opacity: 1; }
 .stage::after {
   content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1;
   background: radial-gradient(130% 95% at 50% 45%, transparent 60%, color-mix(in oklab, var(--ink) 26%, transparent) 100%);
@@ -99,37 +66,21 @@ html:has(.gharaana), html:has(.gharaana) body {
 
 /* ============ Hero ============ */
 .hero {
-  position: absolute; left: 0; right: 0; top: 34cqh;
+  position: absolute; left: 0; right: 0; top: 40cqh;
   padding-inline: var(--gutter);
   display: flex; flex-direction: column; align-items: center; text-align: center;
   gap: clamp(0.6rem, 1.6cqh, 1.25rem);
-  pointer-events: none; z-index: 4;
+  pointer-events: none; z-index: 3;
 }
-/* the title sits high, under the cut-out of the blocks (.film--cutout, z-index 3), so their tops overlap its letters;
-   the line and the search sit low, over the lake, above everything */
-.hero--title { z-index: 2; top: 4.5cqh; }  /* level with the nav: the title sits between the logo and the buttons */
-.hero--rest { top: auto; bottom: clamp(2rem, 9cqh, 5.5rem); }
 .hero__title {
-  margin: 0; font-family: var(--font-hero); font-weight: 400;
-  font-size: clamp(2.1rem, 5vw, 4.6rem); line-height: 1; letter-spacing: 0.012em;
-  text-wrap: balance; color: #fff;
-  /* a white stroke under the fill thickens Anton into a fatter face */
-  -webkit-text-stroke: 0.045em #fff; paint-order: stroke fill;
-  text-shadow: 0 0.04em 0.5em rgb(0 18 56 / 0.35);
+  margin: 0; font-family: var(--font-display); font-weight: 300;
+  font-size: clamp(2.75rem, 6.6vw, 6rem); line-height: 0.96; letter-spacing: -0.035em;
+  text-wrap: balance; color: var(--ink);
 }
 .hero__line { display: block; }
-/* The intro is CSS, so it runs from the first paint rather than after the page's script has loaded. The title is the
-   phone's LCP element (Chrome skips the full-screen poster), so its words come into focus instead of rising from behind
-   a mask: they are painted, and counted, on the first frame. */
-@keyframes hero-rise { from { transform: translateY(0.12em); filter: blur(10px); } }
-@keyframes hero-up { from { opacity: 0; transform: translateY(var(--from, 14px)); } }
-@keyframes hero-in { from { opacity: 0; } }
-.hero__title .wi { animation: hero-rise 1.3s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(0.1s + var(--i, 0) * 0.1s); }
-.search { --from: 26px; animation: hero-up 1s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both; }
-.nav { animation: hero-in 0.9s ease 0.5s both; }
-/* word-reveal mask: padded so tall caps, ball terminals and script swashes aren't clipped */
-.w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0.06em 0.06em 0.14em; margin: -0.06em -0.06em -0.14em; }
+.w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.1em; margin-bottom: -0.1em; }
 .wi { display: inline-block; }
+.hero__sub { margin: 0; font-size: clamp(1rem, 1.4vw, 1.25rem); color: color-mix(in oklab, var(--ink) 82%, white); }
 
 .search {
   pointer-events: auto; margin-top: clamp(0.5rem, 2cqh, 1.5rem);
@@ -160,13 +111,13 @@ html:has(.gharaana), html:has(.gharaana) body {
 .btn--sun { background: var(--sun); }
 .btn--sun:hover { background: color-mix(in oklab, var(--sun) 88%, white); }
 .btn--sm { padding: 0.6rem 1.15rem; font-size: 0.95rem; }
+.btn:active { transform: scale(0.97); }
 .btn--ghost { background: rgb(255 255 255 / 0.82); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--ink) 22%, transparent); text-decoration: none; }
 .btn--ghost:hover { background: #fff; }
 .nav[data-tone="paper"] .btn--ghost { background: transparent; color: #fff; box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.7); }
 .nav[data-tone="paper"] .btn--ghost:hover { background: rgb(255 255 255 / 0.14); }
-.btn:active { transform: scale(0.97); }
 
-/* ============ Nav, captions ============ */
+/* ============ Nav, rail, captions ============ */
 .nav {
   position: absolute; z-index: 20; top: 0; left: 0; right: 0;
   display: flex; align-items: center; justify-content: space-between;
@@ -176,6 +127,22 @@ html:has(.gharaana), html:has(.gharaana) body {
 .nav > * { pointer-events: auto; }
 .nav__mark { display: block; height: clamp(2rem, 4.4cqh, 2.7rem); width: auto; }
 .nav__actions { display: flex; align-items: center; gap: 0.5rem; }
+
+.rail {
+  position: absolute; z-index: 20; right: var(--gutter); top: 50%; translate: 0 -50%;
+  height: min(46cqh, 22rem); color: var(--ink); pointer-events: none;
+}
+.rail[data-tone="paper"] { color: #fff; }
+.rail__track { position: absolute; right: 4px; top: 0; bottom: 0; width: 2px; background: currentColor; opacity: 0.3; border-radius: 2px; }
+.rail__fill { position: absolute; left: 0; right: 0; top: 0; height: 100%; background: var(--sun); transform-origin: top; transform: scaleY(0); border-radius: 2px; }
+.rail__list { list-style: none; margin: 0; padding: 0; height: 100%; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; position: relative; }
+.rail__btn { pointer-events: auto; display: flex; flex-direction: row-reverse; align-items: center; gap: 0.7rem; background: none; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 0.15rem 0; }
+.rail__label { font-size: 0.85rem; font-weight: 500; opacity: 0; translate: 6px 0; transition: opacity 0.3s var(--ease-out), translate 0.3s var(--ease-out); text-shadow: 0 1px 10px color-mix(in oklab, var(--ink) 30%, transparent); }
+.rail[data-tone="ink"] .rail__label { text-shadow: 0 1px 10px rgb(255 255 255 / 0.8); }
+.rail__btn:hover .rail__label, .rail__btn:focus-visible .rail__label, .rail__btn[aria-current="step"] .rail__label { opacity: 1; translate: 0 0; }
+.rail__dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: currentColor; opacity: 0.6; transition: transform 0.3s var(--ease-out), opacity 0.3s, background 0.3s; }
+.rail__btn[aria-current="step"] .rail__dot { background: var(--sun); opacity: 1; transform: scale(1.35); box-shadow: 0 0 0 2px var(--ink); }
+.rail[data-tone="paper"] .rail__btn[aria-current="step"] .rail__dot { box-shadow: 0 0 0 2px #fff; }
 
 .caps {
   position: absolute; z-index: 10; left: var(--gutter); bottom: clamp(1.75rem, 7cqh, 4rem);
@@ -189,9 +156,7 @@ html:has(.gharaana), html:has(.gharaana) body {
 }
 .cap[data-tone="paper"] { color: #fff; }
 .cap[data-tone="paper"]::before { background: radial-gradient(closest-side, color-mix(in oklab, var(--ink) 62%, transparent), color-mix(in oklab, var(--ink) 30%, transparent) 55%, transparent); }
-.cap__kicker { display: block; margin: 0 0 0.15rem; font-family: var(--font-script); font-size: clamp(1.3rem, 1.8vw, 1.7rem); line-height: 1.2; color: var(--blue); }
-.cap[data-tone="paper"] .cap__kicker { color: var(--sun); }
-.cap__title { margin: 0 0 0.6rem; font-family: var(--font-serif); font-weight: 400; font-size: clamp(1.9rem, 3.8vw, 3.4rem); line-height: 1.04; letter-spacing: -0.01em; text-wrap: balance; }
+.cap__title { margin: 0 0 0.6rem; font-family: var(--font-display); font-weight: 300; font-size: clamp(1.9rem, 3.8vw, 3.4rem); line-height: 1.02; letter-spacing: -0.03em; text-wrap: balance; }
 .cap__line { margin: 0; max-width: 34ch; font-size: clamp(0.98rem, 1.25vw, 1.12rem); line-height: 1.5; }
 
 /* ============ Close ============ */
@@ -202,7 +167,7 @@ html:has(.gharaana), html:has(.gharaana) body {
   background: linear-gradient(90deg, color-mix(in oklab, var(--ink) 78%, transparent) 0%, color-mix(in oklab, var(--ink) 45%, transparent) 42%, transparent 70%);
 }
 .close__panel { pointer-events: auto; width: min(36rem, 100%); }
-.close__title { margin: 0 0 1rem; font-family: var(--font-serif); font-weight: 400; font-size: clamp(2.6rem, 6vw, 5.5rem); line-height: 1; letter-spacing: -0.01em; }
+.close__title { margin: 0 0 1rem; font-family: var(--font-display); font-weight: 300; font-size: clamp(2.6rem, 6vw, 5.5rem); line-height: 0.96; letter-spacing: -0.035em; }
 .close__line { display: block; white-space: nowrap; }
 .close__text { margin: 0 0 1.75rem; max-width: 34ch; font-size: clamp(1rem, 1.3vw, 1.15rem); line-height: 1.55; color: color-mix(in oklab, #fff 90%, var(--blue)); }
 .find { display: flex; gap: 0.5rem; padding: 0.4rem; border-radius: 999px; background: rgb(255 255 255 / 0.96); }
@@ -225,15 +190,37 @@ html:has(.gharaana), html:has(.gharaana) body {
   .search__modes { justify-content: space-between; }
   .search__mode { flex: 1; text-align: center; }
   .search .btn { width: 100%; }
+  .rail { right: 5px; height: min(36cqh, 16rem); }
+  .rail__track { right: 2px; }
+  .rail__dot { width: 6px; height: 6px; }
+  .rail__label { display: none; }
   .find { flex-direction: column; border-radius: 1.5rem; }
   .find .btn { width: 100%; }
-  .caps { width: calc(100% - 2 * var(--gutter) - 1.5rem); }
-  .nav .btn--sm { padding: 0.5rem 0.8rem; font-size: 0.85rem; }
   .nav__actions { gap: 0.35rem; }
+  .caps { width: calc(100% - 2 * var(--gutter) - 1.5rem); }
+  .nav .btn--sm { padding: 0.5rem 0.95rem; }
   .sc-close::before { background: linear-gradient(0deg, color-mix(in oklab, var(--ink) 85%, transparent) 0%, color-mix(in oklab, var(--ink) 55%, transparent) 55%, transparent 90%); }
   .sc-close { align-items: flex-end; }
 }
 @media (max-aspect-ratio: 1/1) {
-  .hero--title { top: 8.5cqh; }  /* just under the nav on phones */
+  .hero { top: 44cqh; }
 }
 
+/* ============ Motion preferences ============ */
+@media (prefers-reduced-motion: reduce) {
+  .world { transition: none; }
+}
+
+/* ============ Touch ============ */
+/* Rail dots stay small to the eye but get a 44px tap target on touch screens. */
+@media (pointer: coarse) {
+  .rail { height: min(52cqh, 21rem); }
+  .rail__btn { min-height: 44px; min-width: 44px; justify-content: flex-start; }
+}
+
+/* ?debug: live frame rate, resolution and quality tier */
+.perf-hud {
+  position: fixed; z-index: 50; left: 8px; bottom: 8px; padding: 4px 8px; border-radius: 6px;
+  background: rgb(0 18 56 / 0.82); color: #fff; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums; pointer-events: none;
+}
