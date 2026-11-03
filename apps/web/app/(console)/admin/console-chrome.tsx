@@ -21,7 +21,7 @@ const capsule = "rounded-full bg-surface";
 
 export function Logo() {
   return (
-    <Link href="/admin" aria-label="Gharaana console home" className={`flex h-11 shrink-0 items-center px-4 ${capsule}`}>
+    <Link href="/" aria-label="Gharaana home" className={`flex h-11 shrink-0 items-center px-4 ${capsule}`}>
       <Lockup className="block h-7 w-auto" />
     </Link>
   );

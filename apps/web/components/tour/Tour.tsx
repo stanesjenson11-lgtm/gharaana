@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type Lenis from "lenis";
 import type { buildTour } from "./timeline";
-import { Captions, Close, Hero, Nav, StopRail } from "./Chrome";
-import { STOPS, TOTAL } from "./config";
+import { Captions, Close, Hero, Nav } from "./Chrome";
+import { TOTAL } from "./config";
 import type { World } from "@/components/world/World";
 import "./tour.css";
 
@@ -34,7 +34,6 @@ export default function Tour() {
   const smooth = useRef<Lenis | null>(null);
   const pending = useRef<number | null>(null); // a rail/nav jump asked for before the engine had loaded
   const [tone, setTone] = useState<Tone>("ink");
-  const [active, setActive] = useState(0);
   const [ready, setReady] = useState<"loading" | "ready" | "failed">("loading");
   const [woke, setWoke] = useState(false);
   // browser-only values, read without a setState-in-effect (server render: video mode, no src yet)
@@ -124,7 +123,7 @@ export default function Tour() {
         }
 
         const ctx = gsap.context(() => {
-          api.current = buildTour(root.current!, { reduced, onTone: setTone, onStop: setActive, onTick });
+          api.current = buildTour(root.current!, { reduced, onTone: setTone, onTick });
         }, root);
         if (pending.current != null) { const t = pending.current; pending.current = null; goToTick(t); }
 
@@ -170,8 +169,9 @@ export default function Tour() {
         <Close />
         <Hero />
         <Captions />
-        <Nav tone={tone} onBook={() => goToTick(TOTAL - 1)} />
-        <StopRail tone={tone} active={active} onGo={(i) => goToTick(STOPS[i].at)} />
+        {/* The logo goes back to the hero at once. A plain #top jump moves the page under Lenis, which then glides back to
+            where it thought it was. */}
+        <Nav tone={tone} onBook={() => goToTick(TOTAL - 1)} onHome={() => (smooth.current ? smooth.current.scrollTo(0, { immediate: true }) : window.scrollTo({ top: 0 }))} />
       </div>
     </section>
   );

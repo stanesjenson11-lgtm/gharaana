@@ -1,6 +1,6 @@
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { STOPS, TONE_BREAKS, TOTAL } from "./config";
+import { TONE_BREAKS, TOTAL } from "./config";
 
 type Tone = "ink" | "paper";
 type Vars = gsap.TweenVars;
@@ -8,17 +8,15 @@ type Vars = gsap.TweenVars;
 export type TourHooks = {
   reduced: boolean;
   onTone: (t: Tone) => void;
-  onStop: (i: number) => void;
   onTick: (tick: number) => void; // drives the 3D camera
 };
 
 const FADE = new Set(["opacity", "autoAlpha"]);
 
-/** The HTML layer over the 3D world: hero, captions, close, rail. The camera itself lives in components/world. */
+/** The HTML layer over the 3D world: hero, captions, close. The camera itself lives in components/world. */
 export function buildTour(root: HTMLElement, o: TourHooks) {
   gsap.registerPlugin(ScrollTrigger);
   const q = gsap.utils.selector(root);
-  const one = (s: string) => q(s)[0] as HTMLElement;
 
   const tl = gsap.timeline({
     defaults: { ease: "none" },
@@ -31,7 +29,7 @@ export function buildTour(root: HTMLElement, o: TourHooks) {
       onUpdate: (self) => {
         const tick = self.progress * TOTAL;
         o.onTick(tick);
-        track(tick, self.progress);
+        track(tick);
       },
     },
   });
@@ -56,14 +54,10 @@ export function buildTour(root: HTMLElement, o: TourHooks) {
     if (Object.keys(t.rest).length) tl.set(target, t.rest, at + dur);
   }
 
-  const railFill = one(".rail__fill");
-  let tone: Tone = "ink", stop = 0;
-  function track(tick: number, p: number) {
-    railFill.style.transform = `scaleY(${p})`;
+  let tone: Tone = "ink";
+  function track(tick: number) {
     const nt = [...TONE_BREAKS].reverse().find(([at]) => tick >= at)![1];
     if (nt !== tone) o.onTone((tone = nt));
-    const ns = Math.max(0, STOPS.map((s) => s.at - 7).findLastIndex((a) => tick >= a));
-    if (ns !== stop) o.onStop((stop = ns));
   }
 
   fx("[data-hero]", { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -90 }, 1, 6, "power2.in");

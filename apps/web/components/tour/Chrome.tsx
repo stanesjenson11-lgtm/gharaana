@@ -22,7 +22,6 @@ export function Hero() {
         <span className="hero__line">{words("Step inside")}</span>
         <span className="hero__line">{words("your next address.")}</span>
       </h1>
-      <p className="hero__sub">Scroll to take the tour.</p>
 
       <form className="search" role="search" action="/search" method="get" aria-label="Search homes">
         <fieldset className="search__modes">
@@ -75,11 +74,11 @@ function useSignedIn() {
   return signedIn;
 }
 
-export function Nav({ tone, onBook }: { tone: Tone; onBook: () => void }) {
+export function Nav({ tone, onBook, onHome }: { tone: Tone; onBook: () => void; onHome: () => void }) {
   const session = useSignedIn();
   return (
     <header className="nav" data-tone={tone}>
-      <a href="#top" className="nav__logo" aria-label="Gharaana, back to the start">
+      <a href="#top" className="nav__logo" aria-label="Gharaana, back to the start" onClick={(e) => { e.preventDefault(); onHome(); }}>
         {/* a cached SVG file, not inline paths: keeps 22 KB of path data out of the HTML and this script */}
         {/* eslint-disable-next-line @next/next/no-img-element -- a static vector logo; next/image has nothing to optimise */}
         <img src={tone === "paper" ? `/brand/logo-on-dark.svg${LOGO_V}` : `/brand/logo-color.svg${LOGO_V}`}
@@ -109,26 +108,6 @@ export function Captions() {
         </section>
       ))}
     </div>
-  );
-}
-
-/* ---------- Stop rail: where you are in the tour; click to jump ---------- */
-
-export function StopRail({ tone, active, onGo }: { tone: Tone; active: number; onGo: (i: number) => void }) {
-  return (
-    <nav className="rail" data-tone={tone} aria-label="Tour stops">
-      <div className="rail__track" aria-hidden="true"><i className="rail__fill" /></div>
-      <ol className="rail__list">
-        {STOPS.map((s, i) => (
-          <li key={s.id}>
-            <button type="button" className="rail__btn" aria-label={s.rail} aria-current={i === active ? "step" : undefined} onClick={() => onGo(i)}>
-              <span className="rail__dot" aria-hidden="true" />
-              <span className="rail__label">{s.rail}</span>
-            </button>
-          </li>
-        ))}
-      </ol>
-    </nav>
   );
 }
 

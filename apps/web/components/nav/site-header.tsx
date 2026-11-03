@@ -47,6 +47,7 @@ export function SiteHeader({ member, rentals = false }: { member?: Member | null
   const tone = "text-muted hover:text-ink";
   const here = "text-ink";
   const touch = "inline-flex h-11 items-center justify-center rounded-full transition-colors duration-150";
+  const capsule = "rounded-full bg-surface";
   const total = member ? member.alerts + member.unread : 0;
 
   const signOut = async () => {
@@ -63,27 +64,35 @@ export function SiteHeader({ member, rentals = false }: { member?: Member | null
       >
         Skip to content
       </a>
-      <header className="sticky top-0 z-30 h-16 border-b border-hairline bg-canvas">
-        <div className="mx-auto flex h-full max-w-[1600px] items-center justify-between gap-2 px-4 text-ink sm:px-6">
-          <Link href="/" aria-label="Gharaana home" className="shrink-0 rounded-full">
-            <Logo className="block h-8 w-auto" />
+      {/* The staff console's top bar (app/(console)/admin/console-chrome.tsx): flat grey capsules on white. */}
+      <header className="sticky top-0 z-30 h-16 bg-canvas">
+        <div className="flex h-full items-center gap-3 px-3 text-ink md:px-6">
+          <Link href="/" aria-label="Gharaana home" className={`flex h-11 shrink-0 items-center px-4 ${capsule}`}>
+            <Logo className="block h-7 w-auto" />
           </Link>
 
-          <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
-            {links.map((l) => {
-              const current = active(path, l.href.split("?")[0]) && !l.href.includes("?");
-              return (
-                <Link key={l.href} href={l.href} aria-current={current ? "page" : undefined} className={`${touch} px-3.5 text-[15px] font-medium ${current ? `${here} font-semibold` : tone}`}>
-                  {l.label}
-                </Link>
-              );
-            })}
-          </nav>
+          <div className="hidden min-w-0 flex-1 justify-center md:flex">
+            <nav aria-label="Main" className={`flex items-center gap-0.5 p-1 ${capsule}`}>
+              {links.map((l) => {
+                const current = active(path, l.href.split("?")[0]) && !l.href.includes("?");
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    aria-current={current ? "page" : undefined}
+                    className={`inline-flex h-9 items-center rounded-full px-3.5 text-[15px] whitespace-nowrap transition-colors lg:px-4 ${current ? `bg-canvas font-semibold ${here}` : `font-medium ${tone}`}`}
+                  >
+                    {l.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
 
-          <div className="flex items-center gap-1 sm:gap-1.5">
+          <div className="ml-auto flex items-center gap-2 md:ml-0">
             <Link
               href="/post"
-              className={`${touch} px-4 text-[15px] font-semibold border border-indigo text-indigo hover:bg-indigo hover:text-canvas`}
+              className={`${touch} bg-indigo px-4 text-[15px] font-semibold text-canvas hover:bg-indigo-deep`}
             >
               <span className="sm:hidden">Post</span>
               <span className="hidden sm:inline">Post your property</span>
@@ -92,7 +101,7 @@ export function SiteHeader({ member, rentals = false }: { member?: Member | null
             {member === undefined && <span aria-hidden="true" className="hidden h-11 w-[5.5rem] md:block" />}
 
             {member === null && (
-              <Link href={`/sign-in?next=${encodeURIComponent(next)}`} className={`${touch} hidden px-3.5 text-[15px] font-medium md:inline-flex ${tone}`}>
+              <Link href={`/sign-in?next=${encodeURIComponent(next)}`} className={`${touch} hidden bg-surface px-4 text-[15px] font-medium md:inline-flex ${here}`}>
                 Sign in
               </Link>
             )}
@@ -104,7 +113,7 @@ export function SiteHeader({ member, rentals = false }: { member?: Member | null
                   popoverTarget="inbox-menu"
                   aria-label={total ? `Alerts and messages, ${total} new` : "Alerts and messages"}
                   style={{ anchorName: "--inbox-menu" } as CSSProperties}
-                  className={`${touch} relative hidden w-11 md:inline-flex ${tone}`}
+                  className={`${touch} relative hidden w-11 bg-surface md:inline-flex ${tone}`}
                 >
                   <ICONS.bell className="h-[22px] w-[22px]" />
                   {total > 0 && (
@@ -122,9 +131,10 @@ export function SiteHeader({ member, rentals = false }: { member?: Member | null
                   popoverTarget="account-menu"
                   aria-label="Account menu"
                   style={{ anchorName: "--account-menu" } as CSSProperties}
-                  className={`${touch} hidden w-11 md:inline-flex`}
+                  className={`${touch} hidden gap-1 bg-surface p-0.5 pr-2.5 md:inline-flex`}
                 >
-                  <Avatar name={member.name} image={member.image} className="ring-1 ring-hairline" />
+                  <Avatar name={member.name} image={member.image} />
+                  <ICONS.chevron className="h-4 w-4 rotate-90 text-muted" />
                 </button>
                 <div id="account-menu" popover="auto" className="menu-pop" style={{ positionAnchor: "--account-menu" } as CSSProperties}>
                   <p className="px-3 pt-2 pb-1">
@@ -153,7 +163,7 @@ export function SiteHeader({ member, rentals = false }: { member?: Member | null
               </>
             )}
 
-            <button type="button" aria-haspopup="dialog" aria-controls="site-menu" onClick={() => sheet.current?.showModal()} className={`${touch} relative w-11 md:hidden ${tone}`}>
+            <button type="button" aria-haspopup="dialog" aria-controls="site-menu" onClick={() => sheet.current?.showModal()} className={`${touch} relative w-11 bg-surface md:hidden ${tone}`}>
               <span className="sr-only">{total ? `Open menu, ${total} new` : "Open menu"}</span>
               <ICONS.menu className="h-6 w-6" />
               {total > 0 && <span aria-hidden="true" className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-indigo ring-2 ring-canvas" />}
