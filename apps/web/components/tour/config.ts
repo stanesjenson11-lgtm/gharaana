@@ -1,6 +1,9 @@
 // The tour is one master timeline measured in "ticks". Everything below is in ticks.
 export const TOTAL = 110;
 
+/** public/brand/logo-*.svg (made by scripts/logo-svg.ts from components/brand/logo-paths.ts); bump with the logo. */
+export const LOGO_V = "?v=1";
+
 export type Stop = {
   id: string;
   rail: string; // label in the stop rail

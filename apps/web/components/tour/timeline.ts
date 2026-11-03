@@ -104,16 +104,7 @@ export function buildTour(root: HTMLElement, o: TourHooks) {
     }
   }
 
-  /* ---- intro (time-based, once on load) ---- */
-  if (!o.reduced) {
-    const intro = gsap.timeline({ delay: 0.1, defaults: { ease: "power4.out" } });
-    intro
-      .fromTo(q(".hero .wi"), { yPercent: 115 }, { yPercent: 0, duration: 1.3, stagger: 0.1 }, 0.35)
-      .fromTo(q(".hero__sub"), { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 1 }, 1)
-      .fromTo(q(".search"), { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: 1.1 }, 1.15)
-      .fromTo(q(".nav, .rail"), { autoAlpha: 0 }, { autoAlpha: 1, duration: 1 }, 1.3);
-    cleanups.push(() => intro.kill());
-  }
+  // The intro is CSS (tour.css), so it plays at first paint; this timeline only loads on the first scroll or touch.
   document.documentElement.dataset.ready = "1";
 
   return {

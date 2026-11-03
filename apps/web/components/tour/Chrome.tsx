@@ -1,9 +1,8 @@
 "use client";
 
-import { Logo } from "@/components/brand/Logo";
-import { authClient } from "@/lib/auth-client";
+import { useEffect, useState } from "react";
 import { RENTALS } from "@/lib/search";
-import { STOPS } from "./config";
+import { LOGO_V, STOPS } from "./config";
 
 type Tone = "ink" | "paper";
 
@@ -47,12 +46,44 @@ export function Hero() {
 
 /* ---------- Nav ---------- */
 
+/** Signed in? Asked a moment after the page has loaded (or on the first scroll or tap, if sooner), so the auth client
+ *  stays out of the first load; the nav shows "Sign in" until then. */
+function useSignedIn() {
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    let live = true, asked = false, timer = 0;
+    const ask = () => {
+      if (asked) return;
+      asked = true;
+      import("@/lib/auth-client")
+        .then(({ authClient }) => authClient.getSession())
+        .then((r) => { if (live) setSignedIn(!!r.data); })
+        .catch(() => undefined);
+    };
+    const later = () => { timer = window.setTimeout(ask, 2000); };
+    if (document.readyState === "complete") later(); else addEventListener("load", later, { once: true });
+    addEventListener("pointerdown", ask, { once: true, passive: true });
+    addEventListener("scroll", ask, { once: true, passive: true });
+    return () => {
+      live = false;
+      clearTimeout(timer);
+      removeEventListener("load", later);
+      removeEventListener("pointerdown", ask);
+      removeEventListener("scroll", ask);
+    };
+  }, []);
+  return signedIn;
+}
+
 export function Nav({ tone, onBook }: { tone: Tone; onBook: () => void }) {
-  const { data: session } = authClient.useSession();
+  const session = useSignedIn();
   return (
     <header className="nav" data-tone={tone}>
       <a href="#top" className="nav__logo" aria-label="Gharaana, back to the start">
-        <Logo tone={tone === "paper" ? "colorOnDark" : "color"} className="nav__mark" />
+        {/* a cached SVG file, not inline paths: keeps 22 KB of path data out of the HTML and this script */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- a static vector logo; next/image has nothing to optimise */}
+        <img src={tone === "paper" ? `/brand/logo-on-dark.svg${LOGO_V}` : `/brand/logo-color.svg${LOGO_V}`}
+          alt="Gharaana" width={4784} height={1013} className="nav__mark" />
       </a>
       <div className="nav__actions">
         <button type="button" className="btn btn--sun btn--sm" data-magnet onClick={onBook}>Book a viewing</button>
@@ -90,7 +121,7 @@ export function StopRail({ tone, active, onGo }: { tone: Tone; active: number; o
       <ol className="rail__list">
         {STOPS.map((s, i) => (
           <li key={s.id}>
-            <button type="button" className="rail__btn" aria-current={i === active ? "step" : undefined} onClick={() => onGo(i)}>
+            <button type="button" className="rail__btn" aria-label={s.rail} aria-current={i === active ? "step" : undefined} onClick={() => onGo(i)}>
               <span className="rail__dot" aria-hidden="true" />
               <span className="rail__label">{s.rail}</span>
             </button>
