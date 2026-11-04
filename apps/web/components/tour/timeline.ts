@@ -33,7 +33,8 @@ export function buildTour(root: HTMLElement, o: TourHooks) {
       trigger: root,
       start: "top top",
       end: "bottom bottom",
-      scrub: o.reduced ? true : 0.5,
+      // touch screens already glide (the finger's own momentum): a second glide on top left the film trailing the finger
+      scrub: o.reduced || matchMedia("(pointer: coarse)").matches ? true : 0.5,
       invalidateOnRefresh: true,
     },
   });

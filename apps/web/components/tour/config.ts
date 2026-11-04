@@ -5,7 +5,7 @@ export const TOTAL = 110;
 export const LOGO_V = "?v=1";
 
 /** public/tour-* (film, tick table, posters, tower mask); bump with any of them. */
-export const FILM_V = "?v=16";
+export const FILM_V = "?v=17";
 
 export type Stop = {
   id: string;

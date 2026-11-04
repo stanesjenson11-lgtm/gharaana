@@ -17,11 +17,10 @@ const PINS = [
   { id: "river", label: "Riverside" },
 ] as const;
 
-// The film, its tick table and the scroll engine (GSAP, ScrollTrigger) load on the visitor's first scroll, touch or key
-// press: the first paint is the HTML and the poster (frame 0 of the film), with no video bytes and little script.
-// Laptops and desktops start as soon as the page has loaded, so the film is usually in memory before they scroll.
+// The film, its tick table and the scroll engine (GSAP, ScrollTrigger) load once the page has loaded, or on an earlier
+// scroll, touch or key press: the first paint is the HTML and the poster (frame 0 of the film), with no video bytes and
+// little script. Phones too: waiting for their first touch left them scrolling a still poster while the film came down.
 const WAKE = ["wheel", "touchstart", "pointerdown", "keydown", "scroll"] as const;
-const EARLY = "(min-width: 1024px) and (pointer: fine)";
 // a small film (540p, about a fifth of the size) that can be scrubbed within a second or so, until the sharp one is in
 const QUICK = `/tour-540.mp4${V}`;
 
@@ -48,12 +47,11 @@ export default function Tour() {
       for (const e of WAKE) removeEventListener(e, wake);
       setWoke(true);
     };
-    const early = () => { if (matchMedia(EARLY).matches) wake(); };
     for (const e of WAKE) addEventListener(e, wake, { passive: true });
-    if (document.readyState === "complete") early(); else addEventListener("load", early, { once: true });
+    if (document.readyState === "complete") wake(); else addEventListener("load", wake, { once: true });
     return () => {
       for (const e of WAKE) removeEventListener(e, wake);
-      removeEventListener("load", early);
+      removeEventListener("load", wake);
     };
   }, []);
 
@@ -130,6 +128,8 @@ export default function Tour() {
             }
             seek();
           };
+          // On metadata, not loadeddata: iOS Safari can hold a video at its metadata until it plays or seeks, so waiting
+          // for loadeddata could leave the film unstarted there. A seek only needs the duration.
           const onLoaded = (e: Event) => {
             const v = e.target as HTMLVideoElement;
             // Safari draws a paused video's seeked frames only once it has played
@@ -141,13 +141,13 @@ export default function Tour() {
           };
           for (const v of [lo, hi]) {
             v.muted = true; v.playsInline = true;
-            v.addEventListener("loadeddata", onLoaded);
+            v.addEventListener("loadedmetadata", onLoaded);
             v.addEventListener("seeked", onSeeked);
           }
-          for (const v of [lo, hi]) if (v.readyState >= 2) v.dispatchEvent(new Event("loadeddata"));
+          for (const v of [lo, hi]) if (v.readyState >= 1) v.dispatchEvent(new Event("loadedmetadata"));
           onTick = (t) => { want = frameAt(t); seek(); };
           cleanups.push(() => {
-            for (const v of [lo, hi]) { v.removeEventListener("loadeddata", onLoaded); v.removeEventListener("seeked", onSeeked); }
+            for (const v of [lo, hi]) { v.removeEventListener("loadedmetadata", onLoaded); v.removeEventListener("seeked", onSeeked); }
           });
         } else {
           onTick = (t) => { lastTick = t; world?.setTick(t); };
